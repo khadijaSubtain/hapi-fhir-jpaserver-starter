@@ -24,13 +24,13 @@ public class MdClonePlainProvider {
 	IGenericClient client = FhirContext.forR4().newRestfulGenericClient("http://localhost:8080/fhir");
 
 	@Operation(name = "$use_case_1", idempotent = true)
-	public Bundle bundleDifferentResources(@OperationParam(name = "name") StringType theStart) {
+	public Bundle bundleDifferentResources(@OperationParam(name = "family_name") StringType familyName) {
 
 		logger.info(Thread.currentThread().getStackTrace()[1].getMethodName() + " called");
 
 
-		BundleBuilder builder = new BundleBuilder(myFhirContext);
-/*
+	/*	BundleBuilder builder = new BundleBuilder(myFhirContext);
+
 		// Read a Patient
 		Patient patient = client
 			.read()
@@ -62,20 +62,23 @@ public class MdClonePlainProvider {
 		return results;
 		 */
 
-		Bundle bundle = new Bundle();
+		Bundle resultBundle = new Bundle();
 
 		// Read a Patient
+		if(familyName != null) {
+
+			logger.info(familyName.getValue());
 			Bundle resultsPatient = client
-			.search()
-			.forResource(Patient.class)
-			.where(Patient.NAME.matches().value("Jameson"))
-			.returnBundle(Bundle.class)
-			.execute();
+				.search()
+				.forResource(Patient.class)
+				.where(Patient.NAME.matches().value(familyName.getValue()))
+				.returnBundle(Bundle.class)
+				.execute();
 
-		Bundle.BundleEntryComponent patient = resultsPatient.getEntry().get(0);
+			Bundle.BundleEntryComponent patient = resultsPatient.getEntry().get(0);
 
-		bundle.addEntry(patient);
-
+			resultBundle.addEntry(patient);
+		}
 
 		// Read a Observation
 		Bundle resultsObservation = client
@@ -86,8 +89,8 @@ public class MdClonePlainProvider {
 
 		Bundle.BundleEntryComponent observation = resultsObservation.getEntry().get(0);
 
-		bundle.addEntry(observation);
+		resultBundle.addEntry(observation);
 
-		return bundle;
+		return resultBundle;
 	}
 }
