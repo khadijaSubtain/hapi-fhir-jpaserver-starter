@@ -1,4 +1,4 @@
-package ca.uhn.fhir.jpa.starter.extended;
+package ca.uhn.fhir.jpa.starter.resource.provider;
 
 import ca.uhn.fhir.context.FhirContext;
 import ca.uhn.fhir.rest.annotation.Operation;
@@ -15,15 +15,15 @@ import org.slf4j.LoggerFactory;
 import org.springframework.context.annotation.Configuration;
 
 @Configuration
-public class MdCloneExtendedOperations {
+public class MdClonePlainProvider {
 
-	private final Logger logger = LoggerFactory.getLogger(MdCloneExtendedOperations.class);
+	private final Logger logger = LoggerFactory.getLogger(MdClonePlainProvider.class);
 	private FhirContext myFhirContext = FhirContext.forR4();
 
 	// Create a client
 	IGenericClient client = FhirContext.forR4().newRestfulGenericClient("http://localhost:8080/fhir");
 
-	@Operation(name = "$globalOperation", idempotent = true)
+	@Operation(name = "$use_case_1", idempotent = true)
 	public Bundle bundleDifferentResources(@OperationParam(name = "name") StringType theStart) {
 
 		logger.info(Thread.currentThread().getStackTrace()[1].getMethodName() + " called");

@@ -24,7 +24,8 @@ import ca.uhn.fhir.jpa.provider.TerminologyUploaderProvider;
 import ca.uhn.fhir.jpa.provider.dstu3.JpaConformanceProviderDstu3;
 import ca.uhn.fhir.jpa.provider.ValueSetOperationProvider;
 import ca.uhn.fhir.jpa.search.DatabaseBackedPagingProvider;
-import ca.uhn.fhir.jpa.starter.extended.MdCloneExtendedOperations;
+import ca.uhn.fhir.jpa.starter.resource.provider.HelloWorldPlainProvider;
+import ca.uhn.fhir.jpa.starter.resource.provider.MdClonePlainProvider;
 import ca.uhn.fhir.jpa.subscription.util.SubscriptionDebugLogInterceptor;
 import ca.uhn.fhir.mdm.provider.MdmProviderLoader;
 import ca.uhn.fhir.narrative.DefaultThymeleafNarrativeGenerator;
@@ -61,7 +62,6 @@ import javax.servlet.ServletException;
 import org.hl7.fhir.r4.model.Bundle.BundleType;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationContext;
-import org.springframework.context.annotation.Import;
 import org.springframework.http.HttpHeaders;
 import org.springframework.web.cors.CorsConfiguration;
 
@@ -119,7 +119,7 @@ public class BaseJpaRestfulServer extends RestfulServer {
   private IValidationSupport myValidationSupport;
 
   @Autowired
-  private MdCloneExtendedOperations mdCloneExtendedOperations;
+  private MdClonePlainProvider mdClonePlainProvider;
 
   public BaseJpaRestfulServer() {
   }
@@ -152,7 +152,8 @@ public class BaseJpaRestfulServer extends RestfulServer {
 
     registerProviders(resourceProviderFactory.createProviders());
     registerProvider(jpaSystemProvider);
-    registerProvider(mdCloneExtendedOperations);
+    registerProvider(mdClonePlainProvider);
+	 registerProvider(new HelloWorldPlainProvider());
 
     /*
      * The conformance provider exports the supported resources, search parameters, etc for
