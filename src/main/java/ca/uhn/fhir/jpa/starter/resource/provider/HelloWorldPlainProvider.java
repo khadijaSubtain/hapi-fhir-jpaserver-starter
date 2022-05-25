@@ -1,13 +1,14 @@
 package ca.uhn.fhir.jpa.starter.resource.provider;
 
+import ca.uhn.fhir.context.FhirContext;
 import ca.uhn.fhir.jpa.api.dao.IFhirResourceDao;
 import ca.uhn.fhir.jpa.rp.r4.PatientResourceProvider;
 import ca.uhn.fhir.jpa.searchparam.SearchParameterMap;
 import ca.uhn.fhir.rest.annotation.Operation;
 import ca.uhn.fhir.rest.api.server.IBundleProvider;
+import ca.uhn.fhir.rest.client.api.IGenericClient;
 import ca.uhn.fhir.rest.param.StringOrListParam;
 import org.apache.commons.compress.utils.IOUtils;
-import org.hl7.fhir.r4.model.Patient;
 import org.hl7.fhir.r4.model.StringType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -17,27 +18,16 @@ import org.springframework.context.annotation.Configuration;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
-import java.util.GregorianCalendar;
-import java.util.Random;
 
 @Configuration
 public class HelloWorldPlainProvider {
-	public static int wordCount = 1000;
-
+	public static int wordCount = 1;
+	IGenericClient client = FhirContext.forR4().newRestfulGenericClient("http://localhost:8080/fhir");
 	private final Logger ourLog = LoggerFactory.getLogger(HelloWorldPlainProvider.class);
 
 	@Autowired
 	PatientResourceProvider patientResourceProvider;
-/*
-	public static void main(String[] args) {
 
-		HelloWorldPlainProvider hp = new HelloWorldPlainProvider();
-
-		for (int i = 1; i <= wordCount; i++) {
-		//	System.out.println(i+"--"+hp.randomStringGenerator());
-		}
-	}
-*/
 	/**
 	 * this methods generates a word of random length consiting of random characters
 	 *
@@ -56,8 +46,75 @@ public class HelloWorldPlainProvider {
 		}
 		return word.toString();
 	}
+//---------------------------------------------------------------------------------------------------------------
 
+	//--------------------------------$insertPatient BY CREATING NEW PATIENT -------------------------------------------------------------------
+/*
+	@Operation(name = "$insertPatient", manualResponse = true, manualRequest = true, idempotent = true)
+	public void insertingPatient(HttpServletRequest theServletRequest, HttpServletResponse theServletResponse) throws IOException {
+
+		IFhirResourceDao dao = patientResourceProvider.getDao();
+
+		Patient randomPatient;
+
+		for (int i = 0; i < wordCount; i++) {
+			randomPatient = this.createRandomPatient();
+			System.out.println(i + "hello");
+			dao.create(randomPatient);
+
+		}
+		theServletResponse.setContentType("text/plain");
+		theServletResponse.getWriter().write(wordCount + " patients inserted");
+		theServletResponse.getWriter().close();
+	}
+
+
+	//------------------------$retrievingAllRandomPatients FROM DATABASE USING DAO-------------------------------------------------------------------
+
+	@Operation(name = "$retrievingAllRandomPatients", idempotent = true)
+	public Bundle bundleDifferentResources() {
+		FhirContext.forR4().getRestfulClientFactory().setSocketTimeout(20000 * 1000);
+	//	IGenericClient client = FhirContext.forR4().newRestfulGenericClient("http://localhost:8080/fhir");
+
+		return client
+			.search()
+			.forResource(Patient.class)
+			.returnBundle(Bundle.class)
+			.execute();
+
+	}
+
+	public Patient createRandomPatient() {
+
+		IFhirResourceDao dao = patientResourceProvider.getDao();
+		Patient patient = new Patient();
+
+		HumanName humanName = new HumanName();
+		//set family
+		humanName.setFamily(this.randomStringGenerator());
+
+		//set given
+		List<StringType> givenHumanNameList = new ArrayList<StringType>();
+		givenHumanNameList.add(new StringType(this.randomStringGenerator()));
+		humanName.setGiven(givenHumanNameList);
+
+		//set patient name
+		List<HumanName> humanNameList = new ArrayList<HumanName>();
+		humanNameList.add(humanName);
+		patient.setName(humanNameList);
+
+		//patient.setBirthDate(new Date(this.dateOfBirth());
+
+		//patient.setActive(this.isActive());
+
+		//	patient.setDeceased(new BooleanType(this.isDeceased()));
+
+
+		return patient;
+	}
+*/
 	//-----------------------------------------------------------------------------------------------------------------------------------------------
+	//---------------------------------$returningPlainText--WITH RANDOMLY GENERATED STRING--------------------------------------------------------
 
 	/**
 	 * extended operation
@@ -88,8 +145,7 @@ public class HelloWorldPlainProvider {
 		theServletResponse.getWriter().write(stringBuilder.toString());
 		theServletResponse.getWriter().close();
 	}
-
-	//-----------------------------------------------------------------------------------------------------------------------------------------------
+		//------------------------------$returningTextWithinResource FOR RANDOMLY GENERATED TEXT---------------------------------------------------------------------------------
 	@Operation(name = "$returningTextWithinResource", idempotent = true)
 	public CustomResource stringsOfDynamicLength() throws IOException {
 
@@ -116,6 +172,8 @@ public class HelloWorldPlainProvider {
 
 
 	// generate a string of large random data and return it into csv file
+
+//---------------------------------------$retrievingDataUsingDAO--------------------------------------------------------------------------------------------------------
 
 
 	//Using DAO to retrieve data instead of client
@@ -146,6 +204,7 @@ public class HelloWorldPlainProvider {
 		IBundleProvider res = dao.search(paramMap);
 		return res;
 	}
+	//---------------------------------------$returningTxt--------------------------------------------------------------------------------------------------------
 
 	//returning text
 	@Operation(name = "$returningTxt", manualResponse = true, manualRequest = true, idempotent = true)
@@ -159,6 +218,7 @@ public class HelloWorldPlainProvider {
 		//theServletResponse.getWriter().write(message);
 		theServletResponse.getWriter().close();
 	}
+//---------------------------------------$returningCSV--------------------------------------------------------------------------------------------------------
 
 	//returning CSV
 	@Operation(name = "$returningCSV", manualResponse = true, manualRequest = true, idempotent = true)

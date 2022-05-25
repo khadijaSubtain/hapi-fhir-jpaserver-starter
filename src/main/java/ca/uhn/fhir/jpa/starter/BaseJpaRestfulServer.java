@@ -160,8 +160,8 @@ public class BaseJpaRestfulServer extends RestfulServer {
     registerProvider(jpaSystemProvider);
     registerProvider(mdClonePlainProvider); // registering mdClonePlainProvider after creating a bean
 	 registerProvider(helloWorldPlainProvider); // registering HelloWorldPlainProvider without creating a bean and by creating a POJO
-
-    /*
+	  registerProvider(patientRandomData);
+	  /*
      * The conformance provider exports the supported resources, search parameters, etc for
      * this server. The JPA version adds resourceProviders counts to the exported statement, so it
      * is a nice addition.

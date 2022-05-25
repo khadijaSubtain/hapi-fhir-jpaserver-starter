@@ -98,7 +98,7 @@ public class MultitenantServerR4IT {
     ourClientTenantInterceptor = new UrlTenantSelectionInterceptor();
     ourCtx = FhirContext.forR4();
     ourCtx.getRestfulClientFactory().setServerValidationMode(ServerValidationModeEnum.NEVER);
-    ourCtx.getRestfulClientFactory().setSocketTimeout(1200 * 1000);
+    ourCtx.getRestfulClientFactory().setSocketTimeout(1200 * 100000);
     String ourServerBase = "http://localhost:" + port + "/fhir/";
     ourClient = ourCtx.newRestfulGenericClient(ourServerBase);
     ourClient.registerInterceptor(new LoggingInterceptor(true));

@@ -59,7 +59,7 @@ helm install --render-subchart-notes hapi-fhir-jpaserver hapifhir/hapi-fhir-jpas
 | readinessProbe.initialDelaySeconds | int | `30` |  |
 | readinessProbe.periodSeconds | int | `20` |  |
 | readinessProbe.successThreshold | int | `1` |  |
-| readinessProbe.timeoutSeconds | int | `20` |  |
+| readinessProbe.timeoutSeconds | int | `200` |  |
 | replicaCount | int | `1` | number of replicas to deploy |
 | resources | object | `{}` | configure the FHIR server's resource requests and limits |
 | securityContext.allowPrivilegeEscalation | bool | `false` |  |
@@ -73,7 +73,7 @@ helm install --render-subchart-notes hapi-fhir-jpaserver hapifhir/hapi-fhir-jpas
 | startupProbe.initialDelaySeconds | int | `60` |  |
 | startupProbe.periodSeconds | int | `30` |  |
 | startupProbe.successThreshold | int | `1` |  |
-| startupProbe.timeoutSeconds | int | `30` |  |
+| startupProbe.timeoutSeconds | int | `300` |  |
 | tolerations | list | `[]` | pod tolerations |
 
 ## Development

@@ -3,69 +3,120 @@ package ca.uhn.fhir.jpa.starter.resource.provider;
 import ca.uhn.fhir.context.FhirContext;
 import ca.uhn.fhir.jpa.api.dao.IFhirResourceDao;
 import ca.uhn.fhir.jpa.rp.r4.PatientResourceProvider;
+import ca.uhn.fhir.rest.annotation.Operation;
 import ca.uhn.fhir.rest.client.api.IGenericClient;
-import ca.uhn.fhir.rest.param.StringAndListParam;
-import ca.uhn.fhir.rest.param.StringOrListParam;
-import ca.uhn.fhir.rest.param.StringParam;
-
-import org.hl7.fhir.r4.model.DateType;
-import org.hl7.fhir.r4.model.HumanName;
-import org.hl7.fhir.r4.model.Patient;
-import org.hl7.fhir.r4.model.StringType;
+import ca.uhn.fhir.util.BundleUtil;
+import org.hl7.fhir.instance.model.api.IBaseBundle;
+import org.hl7.fhir.instance.model.api.IBaseResource;
+import org.hl7.fhir.r4.model.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Configuration;
 
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+import java.io.IOException;
+import java.time.LocalDateTime;
 import java.util.*;
+import java.util.concurrent.TimeUnit;
 
 @Configuration
 public class PatientRandomData {
+	public static int count = 10;
 	@Autowired
 	PatientResourceProvider patientResourceProvider;
-	public static int count=10;
 	// Create a client
-	IGenericClient client = FhirContext.forR4().newRestfulGenericClient("http://localhost:8080/fhir");
-	public static void main(String[] args) {
+	FhirContext ctx= FhirContext.forR4();
+	IGenericClient client = ctx.newRestfulGenericClient("http://localhost:8080/fhir");
 
-		PatientRandomData patient = new PatientRandomData();
 
-		Patient randomPatient ;
+	//------------------------------------EXTENDED OPERATIONS-------------------------------------------------------------------
+
+	@Operation(name = "$insertPatient", manualResponse = true, manualRequest = true, idempotent = true)
+	public void insertingPatient(HttpServletRequest theServletRequest, HttpServletResponse theServletResponse) throws IOException {
+
+		IFhirResourceDao dao = patientResourceProvider.getDao();
+
+		Patient randomPatient;
+
 		for (int i = 0; i < count; i++) {
-			randomPatient = patient.createRandomPatient();
-
+			randomPatient = this.createRandomPatient();
+			dao.create(randomPatient);
 		}
+		theServletResponse.setContentType("text/plain");
+		theServletResponse.getWriter().write(count + " patients inserted");
+		theServletResponse.getWriter().close();
 	}
 
+	@Operation(name = "$retrievingAllRandomPatients",  manualResponse = true, manualRequest = true, idempotent = true)
+	public void bundleDifferentResources(HttpServletRequest theServletRequest, HttpServletResponse theServletResponse) throws IOException{
+		System.out.println("checking connection" + Thread.currentThread().toString());
 
+		List<IBaseResource> patients = new ArrayList<>();
+
+		Bundle resultingBundle = client
+			.search()
+			.forResource(Patient.class)
+			.returnBundle(Bundle.class)
+			.execute();
+		patients.addAll(BundleUtil.toListOfResources(ctx, resultingBundle));
+		//Date timeBeforeLoading = Date.;
+		// Load the subsequent pages -EXTRACT
+		while (resultingBundle.getLink(IBaseBundle.LINK_NEXT) != null ) {
+			resultingBundle = client
+				.loadPage()
+				.next(resultingBundle)
+				.execute();
+			patients.addAll(BundleUtil.toListOfResources(ctx, resultingBundle));
+		}
+		//LocalDateTime timeAfterLoading = LocalDateTime.now();
+
+		//long seconds = TimeUnit.MILLISECONDS.toSeconds(timeAfterLoading-timeBeforeLoading);
+		//TRANSFORM
+		StringBuilder str = new StringBuilder();
+		for (IBaseResource var : patients)
+		{
+			str.append(((Patient)var).getName().get(0).getFamily());
+			str.append(", ");
+		}
+		// LOAD
+		System.out.println("Loaded " + patients.size() + " patients!");
+		theServletResponse.setContentType("text/plain");
+		theServletResponse.getWriter().write(str.toString());
+		theServletResponse.getWriter().close();
+	}
+
+	//------------------------------------CREATING PATIENT-------------------------------------------------------------
 
 	//Insert Patient to Bundle
-	public Patient createRandomPatient(){
+	public Patient createRandomPatient() {
 
 		IFhirResourceDao dao = patientResourceProvider.getDao();
 		Patient patient = new Patient();
 
-		HumanName humanName=new HumanName();
-
+		HumanName humanName = new HumanName();
 		//set family
 		humanName.setFamily(this.randomStringGenerator());
 
 		//set given
-		List<StringType> givenHumanNameList= new ArrayList<StringType>();
+		List<StringType> givenHumanNameList = new ArrayList<StringType>();
 		givenHumanNameList.add(new StringType(this.randomStringGenerator()));
 		humanName.setGiven(givenHumanNameList);
 
 		//set patient name
-		List<HumanName> humanNameList= new ArrayList<HumanName>();
+		List<HumanName> humanNameList = new ArrayList<HumanName>();
 		humanNameList.add(humanName);
 		patient.setName(humanNameList);
 
-		Date date = new Date();
-		//date.setValue(this.dateOfBirth());
+		//patient.setBirthDate(new Date(this.dateOfBirth());
 
-		patient.setBirthDate(date);
-		//patient.setBirthDate(new DateType(date.setValue(this.dateOfBirth())));
+		patient.setActive(this.isActive());
+
+		patient.setDeceased(new BooleanType(this.isDeceased()));
+
 
 		return patient;
 	}
+	//----------------------------------CREATING RANDOM DATA-------------------------------------------------------------
 
 	//generate random data for Birthdate
 	public String dateOfBirth() {
