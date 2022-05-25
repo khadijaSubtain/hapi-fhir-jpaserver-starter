@@ -22,6 +22,7 @@ import java.util.concurrent.TimeUnit;
 @Configuration
 public class PatientRandomData {
 	public static int count = 10;
+	public static int extractCount = 0;
 	@Autowired
 	PatientResourceProvider patientResourceProvider;
 	// Create a client
@@ -58,8 +59,11 @@ public class PatientRandomData {
 			.forResource(Patient.class)
 			.returnBundle(Bundle.class)
 			.execute();
+
 		patients.addAll(BundleUtil.toListOfResources(ctx, resultingBundle));
-		//Date timeBeforeLoading = Date.;
+
+		long timeBeforeLoading = new Date().getTime();
+
 		// Load the subsequent pages -EXTRACT
 		while (resultingBundle.getLink(IBaseBundle.LINK_NEXT) != null ) {
 			resultingBundle = client
@@ -68,21 +72,51 @@ public class PatientRandomData {
 				.execute();
 			patients.addAll(BundleUtil.toListOfResources(ctx, resultingBundle));
 		}
-		//LocalDateTime timeAfterLoading = LocalDateTime.now();
+		long timeAfterLoading =  new Date().getTime();
+		long seconds = TimeUnit.MILLISECONDS.toSeconds(timeAfterLoading-timeBeforeLoading);
+		long milliSeconds= TimeUnit.MILLISECONDS.toMillis(timeAfterLoading-timeBeforeLoading);
 
-		//long seconds = TimeUnit.MILLISECONDS.toSeconds(timeAfterLoading-timeBeforeLoading);
+		System.out.print("EXTRACTED: "+ patients.size() + " patients in " +milliSeconds + " milliSeconds, " + seconds+ " seconds, " + (seconds/60) +" minutes. " );
+
+
 		//TRANSFORM
+		timeBeforeLoading = new Date().getTime();
 		StringBuilder str = new StringBuilder();
+
 		for (IBaseResource var : patients)
 		{
-			str.append(((Patient)var).getName().get(0).getFamily());
-			str.append(", ");
+		//EXTRACT
+			transformPatientToCSV(str, (Patient) var);
 		}
+
+		timeAfterLoading = new Date().getTime();
+		seconds = TimeUnit.MILLISECONDS.toSeconds(timeAfterLoading-timeBeforeLoading);
+		milliSeconds= TimeUnit.MILLISECONDS.toMillis(timeAfterLoading-timeBeforeLoading);
+
+		System.out.print("TRANSFORMED: "+ patients.size() + " patients in " +milliSeconds + " milliSeconds, " + seconds+ " seconds, " + (seconds/60) +" minutes. " );
+
 		// LOAD
 		System.out.println("Loaded " + patients.size() + " patients!");
 		theServletResponse.setContentType("text/plain");
 		theServletResponse.getWriter().write(str.toString());
 		theServletResponse.getWriter().close();
+	}
+
+	private void transformPatientToCSV(StringBuilder str, Patient var) {
+		str.append(++extractCount);
+		str.append(", ");
+		str.append(var.getName().get(0).getFamily());
+		str.append(", ");
+		//givenName
+		str.append(var.getName().get(0).getGiven());
+		str.append(", ");
+		//active
+		str.append( var.getActive()? "true" : "false");
+		str.append(", ");
+		//deceased
+		str.append(var.getDeceased());
+		str.append(", ");
+		str.append("-1 ");
 	}
 
 	//------------------------------------CREATING PATIENT-------------------------------------------------------------
