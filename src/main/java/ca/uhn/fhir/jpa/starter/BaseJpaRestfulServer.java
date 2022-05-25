@@ -26,6 +26,7 @@ import ca.uhn.fhir.jpa.provider.ValueSetOperationProvider;
 import ca.uhn.fhir.jpa.search.DatabaseBackedPagingProvider;
 import ca.uhn.fhir.jpa.starter.resource.provider.HelloWorldPlainProvider;
 import ca.uhn.fhir.jpa.starter.resource.provider.MdClonePlainProvider;
+import ca.uhn.fhir.jpa.starter.resource.provider.PatientRandomData;
 import ca.uhn.fhir.jpa.subscription.util.SubscriptionDebugLogInterceptor;
 import ca.uhn.fhir.mdm.provider.MdmProviderLoader;
 import ca.uhn.fhir.narrative.DefaultThymeleafNarrativeGenerator;
@@ -114,12 +115,17 @@ public class BaseJpaRestfulServer extends RestfulServer {
   Optional<CqlProviderLoader> cqlProviderLoader;
   @Autowired
   Optional<MdmProviderLoader> mdmProviderProvider;
-
   @Autowired
   private IValidationSupport myValidationSupport;
 
   @Autowired
   private MdClonePlainProvider mdClonePlainProvider;
+
+	@Autowired
+	private HelloWorldPlainProvider helloWorldPlainProvider;
+
+	@Autowired
+	private PatientRandomData patientRandomData;
 
   public BaseJpaRestfulServer() {
   }
@@ -152,8 +158,8 @@ public class BaseJpaRestfulServer extends RestfulServer {
 
     registerProviders(resourceProviderFactory.createProviders());
     registerProvider(jpaSystemProvider);
-    registerProvider(mdClonePlainProvider);
-	 registerProvider(new HelloWorldPlainProvider());
+    registerProvider(mdClonePlainProvider); // registering mdClonePlainProvider after creating a bean
+	 registerProvider(helloWorldPlainProvider); // registering HelloWorldPlainProvider without creating a bean and by creating a POJO
 
     /*
      * The conformance provider exports the supported resources, search parameters, etc for
