@@ -4,8 +4,10 @@ import ca.uhn.fhir.context.FhirContext;
 import ca.uhn.fhir.jpa.api.dao.IFhirResourceDao;
 import ca.uhn.fhir.jpa.rp.r4.PatientResourceProvider;
 import ca.uhn.fhir.rest.annotation.Operation;
+import ca.uhn.fhir.rest.annotation.OperationParam;
 import ca.uhn.fhir.rest.client.api.IGenericClient;
 import ca.uhn.fhir.util.BundleUtil;
+import org.hl7.fhir.Code;
 import org.hl7.fhir.instance.model.api.IBaseBundle;
 import org.hl7.fhir.instance.model.api.IBaseResource;
 import org.hl7.fhir.r4.model.*;
@@ -15,22 +17,30 @@ import org.springframework.context.annotation.Configuration;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
-import java.time.LocalDateTime;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
 
 @Configuration
 public class PatientRandomData {
-	public static int count = 10;
+	public static int count = 1000000;
 	public static int extractCount = 0;
 	@Autowired
 	PatientResourceProvider patientResourceProvider;
 	// Create a client
-	FhirContext ctx= FhirContext.forR4();
+	FhirContext ctx = FhirContext.forR4();
 	IGenericClient client = ctx.newRestfulGenericClient("http://localhost:8080/fhir");
 
 
 	//------------------------------------EXTENDED OPERATIONS-------------------------------------------------------------------
+
+	@Operation(name = "$retrievingBundle", idempotent = true)
+	public Bundle retrievingBundle()  {
+		return client
+				.search()
+				.forResource(Patient.class)
+				.returnBundle(Bundle.class)
+				.execute();
+	}
 
 	@Operation(name = "$insertPatient", manualResponse = true, manualRequest = true, idempotent = true)
 	public void insertingPatient(HttpServletRequest theServletRequest, HttpServletResponse theServletResponse) throws IOException {
@@ -48,8 +58,8 @@ public class PatientRandomData {
 		theServletResponse.getWriter().close();
 	}
 
-	@Operation(name = "$retrievingAllRandomPatients",  manualResponse = true, manualRequest = true, idempotent = true)
-	public void bundleDifferentResources(HttpServletRequest theServletRequest, HttpServletResponse theServletResponse) throws IOException{
+	@Operation(name = "$retrievingAllRandomPatients", manualResponse = true, manualRequest = true, idempotent = true)
+	public void bundleDifferentResources(HttpServletRequest theServletRequest, HttpServletResponse theServletResponse) throws IOException {
 		System.out.println("checking connection" + Thread.currentThread().toString());
 
 		List<IBaseResource> patients = new ArrayList<>();
@@ -65,35 +75,34 @@ public class PatientRandomData {
 		long timeBeforeLoading = new Date().getTime();
 
 		// Load the subsequent pages -EXTRACT
-		while (resultingBundle.getLink(IBaseBundle.LINK_NEXT) != null ) {
+		while (resultingBundle.getLink(IBaseBundle.LINK_NEXT) != null) {
 			resultingBundle = client
 				.loadPage()
 				.next(resultingBundle)
 				.execute();
 			patients.addAll(BundleUtil.toListOfResources(ctx, resultingBundle));
 		}
-		long timeAfterLoading =  new Date().getTime();
-		long seconds = TimeUnit.MILLISECONDS.toSeconds(timeAfterLoading-timeBeforeLoading);
-		long milliSeconds= TimeUnit.MILLISECONDS.toMillis(timeAfterLoading-timeBeforeLoading);
+		long timeAfterLoading = new Date().getTime();
+		long seconds = TimeUnit.MILLISECONDS.toSeconds(timeAfterLoading - timeBeforeLoading);
+		long milliSeconds = TimeUnit.MILLISECONDS.toMillis(timeAfterLoading - timeBeforeLoading);
 
-		System.out.print("EXTRACTED: "+ patients.size() + " patients in " +milliSeconds + " milliSeconds, " + seconds+ " seconds, " + (seconds/60) +" minutes. " );
+		System.out.print("EXTRACTED: " + patients.size() + " patients in " + milliSeconds + " milliSeconds, " + seconds + " seconds, " + (seconds / 60) + " minutes. ");
 
 
 		//TRANSFORM
 		timeBeforeLoading = new Date().getTime();
 		StringBuilder str = new StringBuilder();
 
-		for (IBaseResource var : patients)
-		{
-		//EXTRACT
+		for (IBaseResource var : patients) {
+			//EXTRACT
 			transformPatientToCSV(str, (Patient) var);
 		}
 
 		timeAfterLoading = new Date().getTime();
-		seconds = TimeUnit.MILLISECONDS.toSeconds(timeAfterLoading-timeBeforeLoading);
-		milliSeconds= TimeUnit.MILLISECONDS.toMillis(timeAfterLoading-timeBeforeLoading);
+		seconds = TimeUnit.MILLISECONDS.toSeconds(timeAfterLoading - timeBeforeLoading);
+		milliSeconds = TimeUnit.MILLISECONDS.toMillis(timeAfterLoading - timeBeforeLoading);
 
-		System.out.print("TRANSFORMED: "+ patients.size() + " patients in " +milliSeconds + " milliSeconds, " + seconds+ " seconds, " + (seconds/60) +" minutes. " );
+		System.out.print("TRANSFORMED: " + patients.size() + " patients in " + milliSeconds + " milliSeconds, " + seconds + " seconds, " + (seconds / 60) + " minutes. ");
 
 		// LOAD
 		System.out.println("Loaded " + patients.size() + " patients!");
@@ -105,13 +114,28 @@ public class PatientRandomData {
 	private void transformPatientToCSV(StringBuilder str, Patient var) {
 		str.append(++extractCount);
 		str.append(", ");
+		//identifier
+		str.append(var.getIdentifier().get(0));
+		str.append(", ");
+		//family name
 		str.append(var.getName().get(0).getFamily());
 		str.append(", ");
 		//givenName
 		str.append(var.getName().get(0).getGiven());
 		str.append(", ");
+		//practitioner family name
+		//address
+		str.append(var.getAddress().get(0));
+		str.append(", ");
+		//telecom
+		str.append(var.getTelecom().get(0));
+		str.append(", ");
+
+		//married
+		//multipleBirth
+
 		//active
-		str.append( var.getActive()? "true" : "false");
+		str.append(var.getActive() ? "true" : "false");
 		str.append(", ");
 		//deceased
 		str.append(var.getDeceased());
@@ -136,24 +160,71 @@ public class PatientRandomData {
 		givenHumanNameList.add(new StringType(this.randomStringGenerator()));
 		humanName.setGiven(givenHumanNameList);
 
-		//set patient name
+		//inserting patient name
 		List<HumanName> humanNameList = new ArrayList<HumanName>();
 		humanNameList.add(humanName);
 		patient.setName(humanNameList);
 
-		//patient.setBirthDate(new Date(this.dateOfBirth());
+		//inserting the address of the patient
+		Address address = new Address();
+		List<Address> theAddress = new ArrayList<>();
+		address.addLine(this.completeAddress());
+		theAddress.add(address);
 
+		//inserting the activity status of patient
 		patient.setActive(this.isActive());
 
+		//inserting random value for deceased
 		patient.setDeceased(new BooleanType(this.isDeceased()));
+
+		//inserting random value for identifier
+		List<Identifier> identifierList = new ArrayList<>();
+		Identifier id = new Identifier();
+		id.setValue(this.identifier());
+		identifierList.add(id);
+		patient.setIdentifier(identifierList);
+
+		//Telecome
+		ContactPoint contactPoint = new ContactPoint();
+		contactPoint.setValue(this.phoneNumber());
+		List<ContactPoint> contactPointList = new ArrayList<>();
+		contactPointList.add(contactPoint);
+		patient.setTelecom(contactPointList);
+
+		//multiple birth
+		BooleanType multipleBirth= new BooleanType();
+		patient.setMultipleBirth(multipleBirth.setValue(this.multipleBirth()));
+		patient.setActive(this.isActive());
+		//Inserting Practitioner name
+		HumanName humanNameForPractitioner = new HumanName();
+		//set family
+		humanNameForPractitioner.setFamily(this.randomStringGenerator());
+
+		//set given
+		List<StringType> givenHumanNameListPractitioner = new ArrayList<StringType>();
+		givenHumanNameListPractitioner.add(new StringType(this.randomStringGenerator()));
+		humanNameForPractitioner.setGiven(givenHumanNameListPractitioner);
+
+		//inserting patient name
+		List<HumanName> humanNameListPractitioner = new ArrayList<HumanName>();
+		humanNameListPractitioner.add(humanName);
+		patient.setName(humanNameListPractitioner);
 
 
 		return patient;
 	}
 	//----------------------------------CREATING RANDOM DATA-------------------------------------------------------------
-
+	//generate random identifier
+	public String identifier(){
+		return ""+ this.randomStringGenerator();
+	}
+	//martial status
+	public boolean multipleBirth(){
+		return new Random().nextBoolean();
+	}
+	//multiple birth
 	//generate random data for Birthdate
-	public String dateOfBirth() {
+	public java.lang.String dateOfBirth() {
 		GregorianCalendar calander = new GregorianCalendar();
 		int year = rangeOfYear(1950, 2020);
 		calander.set(calander.YEAR, year);
@@ -167,9 +238,9 @@ public class PatientRandomData {
 	}
 
 	//generate random phone number
-	public long phoneNumber() {
+	public String phoneNumber() {
 		long phoneNumber = 0;
-		return randomNumberOf_fixedLength(10, 9, 0);
+		return ""+ randomNumberOf_fixedLength(10, 9, 0);
 	}
 
 	public int randomNumberGenerator(int max, int min) {
@@ -187,12 +258,11 @@ public class PatientRandomData {
 	}
 
 	//generate random address
-	public String completeAddress() {
+	public java.lang.String completeAddress() {
 
 		return "House No: " + this.houseNumber() + ", Street " + this.randomStringGenerator() + ", city: " +
 			this.randomStringGenerator() + ", district:" + this.randomStringGenerator() + ", state:" + this.randomStringGenerator() +
-			", postal code:" + " H9S 2Y3"
-			;
+			", postal code:" + " H9S 2Y3";
 	}
 
 	public int houseNumber() {
