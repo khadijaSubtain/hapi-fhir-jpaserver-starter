@@ -6,9 +6,11 @@ import ca.uhn.fhir.jpa.rp.r4.PatientResourceProvider;
 import ca.uhn.fhir.rest.annotation.Operation;
 import ca.uhn.fhir.rest.client.api.IGenericClient;
 import ca.uhn.fhir.util.BundleUtil;
+import org.hl7.fhir.AdministrativeGender;
 import org.hl7.fhir.instance.model.api.IBaseBundle;
 import org.hl7.fhir.instance.model.api.IBaseResource;
 import org.hl7.fhir.r4.model.*;
+import org.hl7.fhir.r4.model.Enumeration;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Configuration;
 
@@ -20,7 +22,7 @@ import java.util.concurrent.TimeUnit;
 
 @Configuration
 public class PatientRandomData {
-	public static int count = 10000;
+	public static int count = 10;
 	public static int extractCount = 0;
 	@Autowired
 	PatientResourceProvider patientResourceProvider;
@@ -95,6 +97,8 @@ public class PatientRandomData {
 		//TRANSFORM
 		timeBeforeLoading = new Date().getTime();
 		StringBuilder str = new StringBuilder();
+		str.append( "COUNT, IDENTIFIER, ACTIVE, NAME, TELECOM, GENDER, BIRTH DATE, DECEASED, ADDRESS, " +
+			"MARITAL STATUS, MULTIPLE BIRTH \n");
 
 		for (IBaseResource var : patients) {
 			//EXTRACT
@@ -116,44 +120,61 @@ public class PatientRandomData {
 
 	private void transformPatientToCSV(StringBuilder str, Patient var) {
 		str.append(++extractCount);
-		str.append(", ID: ");
+		str.append(", ");
+
 		//identifier
 		str.append(var.getIdentifier().get(0).getValue());
-		str.append(", NAME: ");
-		//family name
-		str.append(var.getName().get(0).getFamily());
-		str.append(", - ");
-		//givenName
-		str.append(var.getName().get(0).getGiven().get(0).getValue());
-	/*	str.append(", PRACTITIONER: ");
-		//practitioner family name
-		str.append(var.getGeneralPractitioner().get(0));
+		str.append(",");
 
-	 */
-		str.append(", BIRTH DATE: ");
-		//Date of Birth
-
-		str.append(var.getBirthDate().getYear() +"-" +	var.getBirthDate().getMonth() +
-			"-"+ var.getBirthDate().getDate());
-		str.append(", ADDRESS: ");
-		//address
-		str.append(var.getAddress().get(0).getLine().get(0).getValue());
-		str.append(", TELECOM: ");
-		//telecom
-		str.append(var.getTelecom().get(0).getValue());
-		str.append(", MARITAL STATUS: ");
-		//married
-		str.append(var.getMaritalStatus().getTextElement());
-		//multipleBirth
-		str.append((var.getMultipleBirthBooleanType().getValue() ? "true" : "false"));
-		str.append(", ACTIVE: ");
 		//active
 		str.append(var.getActive() ? "true" : "false");
-		str.append(", DECEASED:");
+		str.append(",");
+
+		//family name
+		str.append(var.getName().get(0).getFamily());
+		str.append(" - ");
+		//givenName
+		str.append(var.getName().get(0).getGiven().get(0).getValue());
+		str.append(", ");
+
+		//telecom
+		str.append(var.getTelecom().get(0).getValue());
+		str.append(", ");
+
+		//Gender
+		str.append(var.getGender().toCode());
+		str.append(", ");
+
+		//Date of Birth
+		str.append(var.getBirthDate().getYear() +"-" +	var.getBirthDate().getMonth() +
+			"-"+ var.getBirthDate().getDate());
+		str.append(", ");
+
 		//deceased
 		str.append((var.getDeceasedBooleanType().getValue() ? "true" : "false"));
 		str.append(", ");
+
+		//address
+		str.append(var.getAddress().get(0).getLine().get(0).getValue());
+		str.append(", ");
+
+		//married
+		str.append(var.getMaritalStatus().getTextElement());
+		str.append(", ");
+
+		//multipleBirth
+		str.append((var.getMultipleBirthBooleanType().getValue() ? "true" : "false"));
+		str.append(", ");
+
+		//end of line
 		str.append("-1 ");
+		str.append("\n ");
+
+	/*	str.append(", PRACTITIONER: ");
+		//practitioner family name
+		str.append(var.getGeneralPractitioner().get(0));
+	 */
+
 	}
 
 	//------------------------------------CREATING PATIENT-------------------------------------------------------------
@@ -205,6 +226,8 @@ public class PatientRandomData {
 		List<ContactPoint> contactPointList = new ArrayList<>();
 		contactPointList.add(new ContactPoint().setValue(this.phoneNumber()));
 		patient.setTelecom(contactPointList);
+
+		patient.setGender(Enumerations.AdministrativeGender.fromCode(this.generateRandomGender()));
 
 		//multiple birth
 		BooleanType multipleBirth= new BooleanType();
@@ -309,9 +332,25 @@ public class PatientRandomData {
 
 
 	//generate gender -- curently keeping male and female for synthetic data
-	public char gender() {
-		return ((this.randomNumberGenerator(1, 0)) == 1) ? 'M' : 'F';
+	public String generateRandomGender() {
+		int genderCode = this.randomNumberGenerator(4, 1);
+		String gender="";
+		switch (genderCode){
+			case 1:
+				gender = "male";
+				break;
+			case 2:
+				gender = "female";
+			break;
+			case 3:
+				gender = "other";
+			break;
+			case 4:
+				gender = "unknown";
+			break;
 
+		}
+		return gender;
 	}
 
 	// deceased
