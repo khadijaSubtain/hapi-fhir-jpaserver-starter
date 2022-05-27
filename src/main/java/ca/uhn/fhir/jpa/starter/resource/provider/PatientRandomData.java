@@ -50,8 +50,12 @@ public class PatientRandomData {
 		Patient randomPatient;
 
 		for (int i = 0; i <= count; i++) {
-			randomPatient = this.createRandomPatient();
-			dao.create(randomPatient);
+			if(count % 100 ==0) {
+				System.out.println(count);
+			}
+				randomPatient = this.createRandomPatient();
+				dao.create(randomPatient);
+
 		}
 		theServletResponse.setContentType("text/plain");
 		theServletResponse.getWriter().write(count + " patients inserted");
@@ -116,16 +120,18 @@ public class PatientRandomData {
 		str.append(++extractCount);
 		str.append(", ID: ");
 		//identifier
-		str.append(var.getIdentifier().get(0).getId());
+		str.append(var.getIdentifier().get(0).getValue());
 		str.append(", NAME: ");
 		//family name
 		str.append(var.getName().get(0).getFamily());
 		str.append(", - ");
 		//givenName
 		str.append(var.getName().get(0).getGiven().get(0).getValue());
-		str.append(", PRACTITIONER: ");
+	/*	str.append(", PRACTITIONER: ");
 		//practitioner family name
 		str.append(var.getGeneralPractitioner().get(0));
+
+	 */
 		str.append(", BIRTH DATE: ");
 		//Date of Birth
 		str.append(var.getBirthDate().toString());
@@ -212,10 +218,15 @@ public class PatientRandomData {
 		patient.setActive(this.isActive());
 
 		//Inserting Practitioner
-		List<Reference> referenceList = new ArrayList<>();
-		referenceList.add(new Reference().setReference(this.randomStringGenerator()));
-		patient.setGeneralPractitioner(referenceList);
+		/*
+		Reference reference = new Reference("http://fhir.hl7.org/svc/StructureDefinition/c8973a22-2b5b-4e76-9c66-00639c99e61b");
+		reference.setType("http://fhir.hl7.org/svc/StructureDefinition/c8973a22-2b5b-4e76-9c66-00639c99e61b");
 
+
+		List<Reference> referenceList = new ArrayList<>();
+		referenceList.add(reference);
+		patient.setGeneralPractitioner(referenceList);
+		*/
 
 		return patient;
 	}
