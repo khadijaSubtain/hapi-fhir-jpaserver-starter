@@ -120,12 +120,15 @@ public class PatientRandomData {
 		str.append(", NAME: ");
 		//family name
 		str.append(var.getName().get(0).getFamily());
-		str.append(", ");
+		str.append(", - ");
 		//givenName
 		str.append(var.getName().get(0).getGiven().get(0).getValue());
 		str.append(", PRACTITIONER: ");
 		//practitioner family name
 		str.append(var.getGeneralPractitioner().get(0));
+		str.append(", BIRTH DATE: ");
+		//Date of Birth
+		str.append(var.getBirthDate().toString());
 		str.append(", ADDRESS: ");
 		//address
 		str.append(var.getAddress().get(0).getLine().get(0).getValue());
@@ -196,7 +199,7 @@ public class PatientRandomData {
 		codeableConcept.setTextElement(new StringType(this.randomStringGenerator()));
 		patient.setMaritalStatus(codeableConcept);
 
-		//Telecome
+		//Telecom
 		ContactPoint contactPoint = new ContactPoint();
 		contactPoint.setValue(this.phoneNumber());
 		List<ContactPoint> contactPointList = new ArrayList<>();
