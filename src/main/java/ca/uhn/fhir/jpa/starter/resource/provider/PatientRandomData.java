@@ -22,7 +22,7 @@ import java.util.concurrent.TimeUnit;
 
 @Configuration
 public class PatientRandomData {
-	public static int count = 1000000;
+	public static int count = 1;
 	public static int extractCount = 0;
 	@Autowired
 	PatientResourceProvider patientResourceProvider;
@@ -49,7 +49,7 @@ public class PatientRandomData {
 
 		Patient randomPatient;
 
-		for (int i = 0; i < count; i++) {
+		for (int i = 0; i <= count; i++) {
 			randomPatient = this.createRandomPatient();
 			dao.create(randomPatient);
 		}
@@ -75,7 +75,8 @@ public class PatientRandomData {
 		long timeBeforeLoading = new Date().getTime();
 
 		// Load the subsequent pages -EXTRACT
-		while (resultingBundle.getLink(IBaseBundle.LINK_NEXT) != null) {
+
+		while (resultingBundle.getLink(IBaseBundle.LINK_NEXT) != null ) {
 			resultingBundle = client
 				.loadPage()
 				.next(resultingBundle)
@@ -113,32 +114,35 @@ public class PatientRandomData {
 
 	private void transformPatientToCSV(StringBuilder str, Patient var) {
 		str.append(++extractCount);
-		str.append(", ");
+		str.append(", ID: ");
 		//identifier
-		str.append(var.getIdentifier().get(0));
-		str.append(", ");
+		str.append(var.getIdentifier().get(0).getId());
+		str.append(", NAME: ");
 		//family name
 		str.append(var.getName().get(0).getFamily());
 		str.append(", ");
 		//givenName
-		str.append(var.getName().get(0).getGiven());
-		str.append(", ");
+		str.append(var.getName().get(0).getGiven().get(0).getValue());
+		str.append(", PRACTITIONER: ");
 		//practitioner family name
+		str.append(var.getGeneralPractitioner().get(0));
+		str.append(", ADDRESS: ");
 		//address
-		str.append(var.getAddress().get(0));
-		str.append(", ");
+		str.append(var.getAddress().get(0).getLine().get(0).getValue());
+		str.append(", TELECOM: ");
 		//telecom
-		str.append(var.getTelecom().get(0));
-		str.append(", ");
-
+		str.append(var.getTelecom().get(0).getValue());
+		str.append(", MARITAL STATUS: ");
 		//married
+		str.append(var.getMaritalStatus().getTextElement());
 		//multipleBirth
-
+		str.append((var.getMultipleBirthBooleanType().getValue() ? "true" : "false"));
+		str.append(", ACTIVE: ");
 		//active
 		str.append(var.getActive() ? "true" : "false");
-		str.append(", ");
+		str.append(", DECEASED:");
 		//deceased
-		str.append(var.getDeceased());
+		str.append((var.getDeceasedBooleanType().getValue() ? "true" : "false"));
 		str.append(", ");
 		str.append("-1 ");
 	}
@@ -150,6 +154,12 @@ public class PatientRandomData {
 
 		IFhirResourceDao dao = patientResourceProvider.getDao();
 		Patient patient = new Patient();
+		//inserting random value for identifier
+		List<Identifier> identifierList = new ArrayList<>();
+		Identifier id = new Identifier();
+		id.setValue(this.identifier());
+		identifierList.add(id);
+		patient.setIdentifier(identifierList);
 
 		HumanName humanName = new HumanName();
 		//set family
@@ -165,11 +175,15 @@ public class PatientRandomData {
 		humanNameList.add(humanName);
 		patient.setName(humanNameList);
 
+		//Date OF Birth -----------------------------
+		patient.setBirthDate(this.dateOfBirth());
+
 		//inserting the address of the patient
 		Address address = new Address();
-		List<Address> theAddress = new ArrayList<>();
 		address.addLine(this.completeAddress());
+		List<Address> theAddress = new ArrayList<>();
 		theAddress.add(address);
+		patient.setAddress(theAddress);
 
 		//inserting the activity status of patient
 		patient.setActive(this.isActive());
@@ -177,12 +191,10 @@ public class PatientRandomData {
 		//inserting random value for deceased
 		patient.setDeceased(new BooleanType(this.isDeceased()));
 
-		//inserting random value for identifier
-		List<Identifier> identifierList = new ArrayList<>();
-		Identifier id = new Identifier();
-		id.setValue(this.identifier());
-		identifierList.add(id);
-		patient.setIdentifier(identifierList);
+		//Marital status
+		CodeableConcept codeableConcept = new CodeableConcept();
+		codeableConcept.setTextElement(new StringType(this.randomStringGenerator()));
+		patient.setMaritalStatus(codeableConcept);
 
 		//Telecome
 		ContactPoint contactPoint = new ContactPoint();
@@ -195,20 +207,11 @@ public class PatientRandomData {
 		BooleanType multipleBirth= new BooleanType();
 		patient.setMultipleBirth(multipleBirth.setValue(this.multipleBirth()));
 		patient.setActive(this.isActive());
-		//Inserting Practitioner name
-		HumanName humanNameForPractitioner = new HumanName();
-		//set family
-		humanNameForPractitioner.setFamily(this.randomStringGenerator());
 
-		//set given
-		List<StringType> givenHumanNameListPractitioner = new ArrayList<StringType>();
-		givenHumanNameListPractitioner.add(new StringType(this.randomStringGenerator()));
-		humanNameForPractitioner.setGiven(givenHumanNameListPractitioner);
-
-		//inserting patient name
-		List<HumanName> humanNameListPractitioner = new ArrayList<HumanName>();
-		humanNameListPractitioner.add(humanName);
-		patient.setName(humanNameListPractitioner);
+		//Inserting Practitioner
+		List<Reference> referenceList = new ArrayList<>();
+		referenceList.add(new Reference().setReference(this.randomStringGenerator()));
+		patient.setGeneralPractitioner(referenceList);
 
 
 		return patient;
@@ -216,7 +219,7 @@ public class PatientRandomData {
 	//----------------------------------CREATING RANDOM DATA-------------------------------------------------------------
 	//generate random identifier
 	public String identifier(){
-		return ""+ this.randomStringGenerator();
+		return (this.randomStringGenerator());
 	}
 	//martial status
 	public boolean multipleBirth(){
@@ -224,13 +227,19 @@ public class PatientRandomData {
 	}
 	//multiple birth
 	//generate random data for Birthdate
-	public java.lang.String dateOfBirth() {
+	public Date dateOfBirth() {
+
 		GregorianCalendar calander = new GregorianCalendar();
 		int year = rangeOfYear(1950, 2020);
 		calander.set(calander.YEAR, year);
 		int dayOfYear = rangeOfYear(1, calander.getActualMaximum(calander.DAY_OF_YEAR));
 		calander.set(calander.DAY_OF_YEAR, dayOfYear);
-		return calander.get(calander.YEAR) + "-" + (calander.get(calander.MONTH) + 1) + "-" + calander.get(calander.DAY_OF_MONTH);
+		//return calander.get(calander.YEAR) + "-" + (calander.get(calander.MONTH) + 1) + "-" + calander.get(calander.DAY_OF_MONTH);
+		Date dateObj = new Date();
+		dateObj.setYear(calander.get(calander.YEAR));
+		dateObj.setMonth((calander.get(calander.MONTH) + 1));
+		dateObj.setDate(calander.get(calander.DAY_OF_MONTH));
+		return dateObj;
 	}
 
 	public int rangeOfYear(int start, int end) {
