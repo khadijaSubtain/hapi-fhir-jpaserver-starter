@@ -313,9 +313,9 @@ public class PatientRandomData {
 	//generate random address
 	public java.lang.String completeAddress() {
 
-		return "House No: " + this.houseNumber() + ", Street " + this.randomStringGenerator() + ", city: " +
-			this.randomStringGenerator() + ", district:" + this.randomStringGenerator() + ", state:" + this.randomStringGenerator() +
-			", postal code:" + " H9S 2Y3";
+		return "House No: " + this.houseNumber() + " - Street: " + this.randomStringGenerator() + " - city: " +
+			this.randomStringGenerator() + " - district:" + this.randomStringGenerator() +
+			" - state:" + this.randomStringGenerator() + " - postal code:" + " H9S 2Y3";
 	}
 
 	public int houseNumber() {
