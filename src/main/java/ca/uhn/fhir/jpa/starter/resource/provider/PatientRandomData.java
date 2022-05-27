@@ -4,10 +4,8 @@ import ca.uhn.fhir.context.FhirContext;
 import ca.uhn.fhir.jpa.api.dao.IFhirResourceDao;
 import ca.uhn.fhir.jpa.rp.r4.PatientResourceProvider;
 import ca.uhn.fhir.rest.annotation.Operation;
-import ca.uhn.fhir.rest.annotation.OperationParam;
 import ca.uhn.fhir.rest.client.api.IGenericClient;
 import ca.uhn.fhir.util.BundleUtil;
-import org.hl7.fhir.Code;
 import org.hl7.fhir.instance.model.api.IBaseBundle;
 import org.hl7.fhir.instance.model.api.IBaseResource;
 import org.hl7.fhir.r4.model.*;
@@ -22,7 +20,7 @@ import java.util.concurrent.TimeUnit;
 
 @Configuration
 public class PatientRandomData {
-	public static int count = 1;
+	public static int count = 10000;
 	public static int extractCount = 0;
 	@Autowired
 	PatientResourceProvider patientResourceProvider;
@@ -48,17 +46,17 @@ public class PatientRandomData {
 		IFhirResourceDao dao = patientResourceProvider.getDao();
 
 		Patient randomPatient;
-
-		for (int i = 0; i <= count; i++) {
-			if(count % 100 ==0) {
-				System.out.println(count);
+		int i = 0;
+		for ( ; i < count; i++) {
+			if(i % 100 == 0) {
+				System.out.println("Current Count: " + i);
 			}
 				randomPatient = this.createRandomPatient();
 				dao.create(randomPatient);
 
 		}
 		theServletResponse.setContentType("text/plain");
-		theServletResponse.getWriter().write(count + " patients inserted");
+		theServletResponse.getWriter().write(i+1 + " patients inserted");
 		theServletResponse.getWriter().close();
 	}
 
@@ -134,7 +132,9 @@ public class PatientRandomData {
 	 */
 		str.append(", BIRTH DATE: ");
 		//Date of Birth
-		str.append(var.getBirthDate().toString());
+
+		str.append(var.getBirthDate().getYear() +"-" +	var.getBirthDate().getMonth() +
+			"-"+ var.getBirthDate().getDate());
 		str.append(", ADDRESS: ");
 		//address
 		str.append(var.getAddress().get(0).getLine().get(0).getValue());
@@ -163,11 +163,10 @@ public class PatientRandomData {
 
 		IFhirResourceDao dao = patientResourceProvider.getDao();
 		Patient patient = new Patient();
+
 		//inserting random value for identifier
 		List<Identifier> identifierList = new ArrayList<>();
-		Identifier id = new Identifier();
-		id.setValue(this.identifier());
-		identifierList.add(id);
+		identifierList.add(new Identifier().setValue(this.generateRandomIdentifier()));
 		patient.setIdentifier(identifierList);
 
 		HumanName humanName = new HumanName();
@@ -188,10 +187,8 @@ public class PatientRandomData {
 		patient.setBirthDate(this.dateOfBirth());
 
 		//inserting the address of the patient
-		Address address = new Address();
-		address.addLine(this.completeAddress());
 		List<Address> theAddress = new ArrayList<>();
-		theAddress.add(address);
+		theAddress.add(new Address().addLine(this.completeAddress()));
 		patient.setAddress(theAddress);
 
 		//inserting the activity status of patient
@@ -201,20 +198,19 @@ public class PatientRandomData {
 		patient.setDeceased(new BooleanType(this.isDeceased()));
 
 		//Marital status
-		CodeableConcept codeableConcept = new CodeableConcept();
-		codeableConcept.setTextElement(new StringType(this.randomStringGenerator()));
-		patient.setMaritalStatus(codeableConcept);
+		patient.setMaritalStatus(new CodeableConcept().setTextElement(new StringType(this.randomStringGenerator())));
 
 		//Telecom
-		ContactPoint contactPoint = new ContactPoint();
-		contactPoint.setValue(this.phoneNumber());
+
 		List<ContactPoint> contactPointList = new ArrayList<>();
-		contactPointList.add(contactPoint);
+		contactPointList.add(new ContactPoint().setValue(this.phoneNumber()));
 		patient.setTelecom(contactPointList);
 
 		//multiple birth
 		BooleanType multipleBirth= new BooleanType();
 		patient.setMultipleBirth(multipleBirth.setValue(this.multipleBirth()));
+
+		//Active
 		patient.setActive(this.isActive());
 
 		//Inserting Practitioner
@@ -231,8 +227,18 @@ public class PatientRandomData {
 		return patient;
 	}
 	//----------------------------------CREATING RANDOM DATA-------------------------------------------------------------
+	/*
+	public static void main(String[] args){
+		PatientRandomData pt= new PatientRandomData();
+		System.out.print(pt.dateOfBirth().getYear() +"-" +
+			pt.dateOfBirth().getMonth() + "-"+ pt.dateOfBirth().getDate());
+
+	}
+
+	 */
+
 	//generate random identifier
-	public String identifier(){
+	public String generateRandomIdentifier(){
 		return (this.randomStringGenerator());
 	}
 	//martial status
@@ -241,6 +247,7 @@ public class PatientRandomData {
 	}
 	//multiple birth
 	//generate random data for Birthdate
+
 	public Date dateOfBirth() {
 
 		GregorianCalendar calander = new GregorianCalendar();
