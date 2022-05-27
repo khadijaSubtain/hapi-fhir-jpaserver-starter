@@ -98,7 +98,7 @@ public class PatientRandomData {
 		timeBeforeLoading = new Date().getTime();
 		StringBuilder str = new StringBuilder();
 		str.append( "COUNT, IDENTIFIER, ACTIVE, NAME, TELECOM, GENDER, BIRTH DATE, DECEASED, ADDRESS, " +
-			"MARITAL STATUS, MULTIPLE BIRTH \n");
+			"MARITAL STATUS, MULTIPLE BIRTH, EOL\n");
 
 		for (IBaseResource var : patients) {
 			//EXTRACT
