@@ -22,7 +22,7 @@ import java.util.concurrent.TimeUnit;
 
 @Configuration
 public class PatientRandomData {
-	public static int count = 10;
+	public static int count = 300000;
 	public static int extractCount = 0;
 	@Autowired
 	PatientResourceProvider patientResourceProvider;
@@ -49,14 +49,19 @@ public class PatientRandomData {
 
 		Patient randomPatient;
 		int i = 0;
+		long timeBeforeInserting = new Date().getTime();
 		for ( ; i < count; i++) {
 			if(i % 100 == 0) {
 				System.out.println("Current Count: " + i);
 			}
 				randomPatient = this.createRandomPatient();
 				dao.create(randomPatient);
-
 		}
+		long timeAfterInserting = new Date().getTime();
+		long seconds = TimeUnit.MILLISECONDS.toSeconds(timeAfterInserting - timeBeforeInserting);
+		long milliSeconds = TimeUnit.MILLISECONDS.toMillis(timeAfterInserting - timeBeforeInserting);
+		System.out.print("INSERTED: " + count+ " patients in " + milliSeconds + " milliSeconds, " + seconds + " seconds, and " + (seconds / 60) + " minutes. ");
+
 		theServletResponse.setContentType("text/plain");
 		theServletResponse.getWriter().write(i+1 + " patients inserted");
 		theServletResponse.getWriter().close();
@@ -64,9 +69,15 @@ public class PatientRandomData {
 
 	@Operation(name = "$retrievingAllRandomPatients", manualResponse = true, manualRequest = true, idempotent = true)
 	public void bundleDifferentResources(HttpServletRequest theServletRequest, HttpServletResponse theServletResponse) throws IOException {
-		System.out.println("checking connection" + Thread.currentThread().toString());
-
+		System.out.println("called bundleDifferentResources: " + Thread.currentThread().toString());
+		extractCount=0;
 		List<IBaseResource> patients = new ArrayList<>();
+		ctx.getRestfulClientFactory().setSocketTimeout(12000 * 1000);
+		IGenericClient client = ctx.newRestfulGenericClient("http://localhost:8080/fhir");
+
+		System.out.println("Created client and set timeout. Loading first page.");
+
+		long timeBeforeLoading = new Date().getTime();
 
 		Bundle resultingBundle = client
 			.search()
@@ -74,9 +85,16 @@ public class PatientRandomData {
 			.returnBundle(Bundle.class)
 			.execute();
 
-		patients.addAll(BundleUtil.toListOfResources(ctx, resultingBundle));
+		long timeAfterLoading = new Date().getTime();
 
-		long timeBeforeLoading = new Date().getTime();
+		long seconds = TimeUnit.MILLISECONDS.toSeconds(timeAfterLoading - timeBeforeLoading);
+
+		System.out.println("EXTRACTED: First extraction took: " + seconds + " seconds");
+
+
+			patients.addAll(BundleUtil.toListOfResources(ctx, resultingBundle));
+
+		timeBeforeLoading = new Date().getTime();
 
 		// Load the subsequent pages -EXTRACT
 
@@ -87,12 +105,13 @@ public class PatientRandomData {
 				.execute();
 			patients.addAll(BundleUtil.toListOfResources(ctx, resultingBundle));
 		}
-		long timeAfterLoading = new Date().getTime();
-		long seconds = TimeUnit.MILLISECONDS.toSeconds(timeAfterLoading - timeBeforeLoading);
+
+		timeAfterLoading = new Date().getTime();
+		seconds = TimeUnit.MILLISECONDS.toSeconds(timeAfterLoading - timeBeforeLoading);
+
 		long milliSeconds = TimeUnit.MILLISECONDS.toMillis(timeAfterLoading - timeBeforeLoading);
 
-		System.out.print("EXTRACTED: " + patients.size() + " patients in " + milliSeconds + " milliSeconds, " + seconds + " seconds, " + (seconds / 60) + " minutes. ");
-
+		System.out.println("EXTRACTED: " + patients.size() + " patients in " + milliSeconds + " milliSeconds, " + seconds + " seconds, " + (seconds / 60) + " minutes. ");
 
 		//TRANSFORM
 		timeBeforeLoading = new Date().getTime();
@@ -109,7 +128,7 @@ public class PatientRandomData {
 		seconds = TimeUnit.MILLISECONDS.toSeconds(timeAfterLoading - timeBeforeLoading);
 		milliSeconds = TimeUnit.MILLISECONDS.toMillis(timeAfterLoading - timeBeforeLoading);
 
-		System.out.print("TRANSFORMED: " + patients.size() + " patients in " + milliSeconds + " milliSeconds, " + seconds + " seconds, " + (seconds / 60) + " minutes. ");
+		System.out.println("TRANSFORMED: " + patients.size() + " patients in " + milliSeconds + " milliSeconds, " + seconds + " seconds, " + (seconds / 60) + " minutes. ");
 
 		// LOAD
 		System.out.println("Loaded " + patients.size() + " patients!");
