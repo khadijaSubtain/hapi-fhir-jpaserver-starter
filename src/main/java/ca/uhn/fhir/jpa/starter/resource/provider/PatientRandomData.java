@@ -109,7 +109,8 @@ public class PatientRandomData {
 		totalExtractionTime += extractionTimeFirstPage;
 
 		System.out.println();
-		System.out.println("EXTRACT: First extraction of bundle size " + resultingBundle.getEntry().size() + " took: " + extractionTimeFirstPage + " seconds, " + (extractionTimeFirstPage / 60) + " minutes. ");
+		System.out.println("EXTRACT: First extraction of bundle size " + resultingBundle.getEntry().size() +
+			" took: " + extractionTimeFirstPage + " seconds, " + round((extractionTimeFirstPage / 60), 2) + " minutes. ");
 
 		//TRANSFORM: Transform bundle entries to string in CSV format
 		transformBundleToCSV(BundleUtil.toListOfResources(ctx, resultingBundle));
@@ -133,12 +134,12 @@ public class PatientRandomData {
 
 			System.out.println();
 			System.out.println("EXTRACT: Next Page extraction of bundle size " + resultingBundle.getEntry().size() +
-				" took: " + extractionTimeNextPage + " seconds, " + (extractionTimeNextPage / 60) + " minutes.");
+				" took: " + extractionTimeNextPage + " seconds, " + round((extractionTimeNextPage / 60), 2) + " minutes.");
 
 			//TRANSFORM: Transform bundle entries to string in CSV format
 			transformBundleToCSV(BundleUtil.toListOfResources(ctx, resultingBundle));
 
-			System.out.println("EXTRACTED TOTAL: " + readCount + " patients in " + totalExtractionTime + " seconds, " + (totalExtractionTime / 60) + " minutes. ");
+			System.out.println("EXTRACTED TOTAL: " + readCount + " patients in " + totalExtractionTime + " seconds, " + round((totalExtractionTime / 60), 2) + " minutes. ");
 
 			System.out.println("TRANSFORMED TOTAL: " + readCount + " patients in " + totalTransformTime + " milliSeconds, " +
 				round((totalTransformTime / 1000.0), 2) + " seconds, " + round((totalTransformTime / 60000.0), 2) + " minutes.\r\n");
@@ -146,7 +147,7 @@ public class PatientRandomData {
 		}
 
 
-		System.out.println("EXTRACTED TOTAL: " + readCount + " patients in " + totalExtractionTime + " seconds, " + (totalExtractionTime / 60) + " minutes. ");
+		System.out.println("EXTRACTED TOTAL: " + readCount + " patients in " + totalExtractionTime + " seconds, " + round((totalExtractionTime / 60), 2) + " minutes. ");
 
 		System.out.println("TRANSFORMED TOTAL: " + readCount + " patients in " + totalTransformTime + " milliSeconds, " +
 			round((totalTransformTime / 1000.0), 2) + " seconds, " + round((totalTransformTime / 60000.0), 2) + " minutes.\r\n");
@@ -194,7 +195,8 @@ public class PatientRandomData {
 
 		totalTransformTime += milliSeconds;
 
-		System.out.println("TRANSFORM: Transformed: " + patientsList.size() + " patients in " + milliSeconds + " milliSeconds, " + seconds + " seconds, " + (seconds / 60) + " minutes. \r\n");
+		System.out.println("TRANSFORM: Transformed: " + patientsList.size() + " patients in " + milliSeconds + " milliSeconds, " +
+			seconds + " seconds, " + round((seconds / 60), 2) + " minutes. \r\n");
 
 	}
 
