@@ -22,24 +22,29 @@ import java.util.concurrent.TimeUnit;
 
 @Configuration
 public class PatientRandomData {
-	public static int count = 300000;
+	public static int count = 400000;
 	public static int extractCount = 0;
 	@Autowired
 	PatientResourceProvider patientResourceProvider;
 	// Create a client
 	FhirContext ctx = FhirContext.forR4();
 	IGenericClient client = ctx.newRestfulGenericClient("http://localhost:8080/fhir");
+	StringBuilder str = new StringBuilder();
 
+	long totalExtractionTime = 0;
+	long totalTransformTime = 0;
+	int readCount = 0;
+	long sizeOfResource= 0;
 
 	//------------------------------------EXTENDED OPERATIONS-------------------------------------------------------------------
 
 	@Operation(name = "$retrievingBundle", idempotent = true)
 	public Bundle retrievingBundle()  {
 		return client
-				.search()
-				.forResource(Patient.class)
-				.returnBundle(Bundle.class)
-				.execute();
+			.search()
+			.forResource(Patient.class)
+			.returnBundle(Bundle.class)
+			.execute();
 	}
 
 	@Operation(name = "$insertPatient", manualResponse = true, manualRequest = true, idempotent = true)
@@ -54,30 +59,35 @@ public class PatientRandomData {
 			if(i % 100 == 0) {
 				System.out.println("Current Count: " + i);
 			}
-				randomPatient = this.createRandomPatient();
-				dao.create(randomPatient);
+			randomPatient = this.createRandomPatient();
+			dao.create(randomPatient);
 		}
+
 		long timeAfterInserting = new Date().getTime();
 		long seconds = TimeUnit.MILLISECONDS.toSeconds(timeAfterInserting - timeBeforeInserting);
 		long milliSeconds = TimeUnit.MILLISECONDS.toMillis(timeAfterInserting - timeBeforeInserting);
 		System.out.print("INSERTED: " + count+ " patients in " + milliSeconds + " milliSeconds, " + seconds + " seconds, and " + (seconds / 60) + " minutes. ");
 
 		theServletResponse.setContentType("text/plain");
-		theServletResponse.getWriter().write(i+1 + " patients inserted");
+		theServletResponse.getWriter().write(i + " patients inserted");
 		theServletResponse.getWriter().close();
 	}
 
 	@Operation(name = "$retrievingAllRandomPatients", manualResponse = true, manualRequest = true, idempotent = true)
 	public void bundleDifferentResources(HttpServletRequest theServletRequest, HttpServletResponse theServletResponse) throws IOException {
-		System.out.println("called bundleDifferentResources: " + Thread.currentThread().toString());
-		extractCount=0;
-		List<IBaseResource> patients = new ArrayList<>();
+
+		System.out.println("Called bundleDifferentResources: " + Thread.currentThread());
+
+		resetCounters();
+
+		//Set timeout and create new client based on timeout
 		ctx.getRestfulClientFactory().setSocketTimeout(12000 * 1000);
 		IGenericClient client = ctx.newRestfulGenericClient("http://localhost:8080/fhir");
 
 		System.out.println("Created client and set timeout. Loading first page.");
 
-		long timeBeforeLoading = new Date().getTime();
+		//EXTRACT: Loading First Page
+		long timeBeforeLoadingFirstPage = new Date().getTime();
 
 		Bundle resultingBundle = client
 			.search()
@@ -85,59 +95,86 @@ public class PatientRandomData {
 			.returnBundle(Bundle.class)
 			.execute();
 
-		long timeAfterLoading = new Date().getTime();
+		long timeAfterLoadingFirstPage = new Date().getTime();
 
-		long seconds = TimeUnit.MILLISECONDS.toSeconds(timeAfterLoading - timeBeforeLoading);
+		readCount += resultingBundle.getEntry().size();
 
-		System.out.println("EXTRACTED: First extraction took: " + seconds + " seconds");
+		if(resultingBundle.getEntry() != null) {
+			sizeOfResource = InstrumentationAgent.getObjectSize((resultingBundle.getEntry().get(0)));
+		}
 
+		long extractionTimeFirstPage = TimeUnit.MILLISECONDS.toSeconds(timeAfterLoadingFirstPage - timeBeforeLoadingFirstPage);
+		totalExtractionTime += extractionTimeFirstPage;
 
-			patients.addAll(BundleUtil.toListOfResources(ctx, resultingBundle));
+		System.out.println("EXTRACT: First extraction of bundle size : " + resultingBundle.getEntry().size() + " took: " + extractionTimeFirstPage + " seconds, " + (extractionTimeFirstPage / 60) + " minutes. ");
 
-		timeBeforeLoading = new Date().getTime();
+		//TRANSFORM: Transform bundle entries to string in CSV format
+		transformBundleToCSV(BundleUtil.toListOfResources(ctx, resultingBundle));
 
-		// Load the subsequent pages -EXTRACT
-
+		//EXTRACT: Load the subsequent pages
 		while (resultingBundle.getLink(IBaseBundle.LINK_NEXT) != null ) {
+
+			long	timeBeforeLoadingPage = new Date().getTime();
+
 			resultingBundle = client
 				.loadPage()
 				.next(resultingBundle)
 				.execute();
-			patients.addAll(BundleUtil.toListOfResources(ctx, resultingBundle));
+
+			long timeAfterLoadingPage = new Date().getTime();
+
+			readCount += resultingBundle.getEntry().size();
+
+			long extractionTimeNextPage = TimeUnit.MILLISECONDS.toSeconds(timeAfterLoadingPage - timeBeforeLoadingPage);
+			totalExtractionTime += extractionTimeNextPage;
+
+			System.out.println("EXTRACT: Next Page extraction of bundle size : " + resultingBundle.getEntry().size() + " took: " + extractionTimeNextPage + " seconds, " + (extractionTimeNextPage / 60) + " minutes. ");
+
+			//TRANSFORM: Transform bundle entries to string in CSV format
+			transformBundleToCSV(BundleUtil.toListOfResources(ctx, resultingBundle));
 		}
 
-		timeAfterLoading = new Date().getTime();
-		seconds = TimeUnit.MILLISECONDS.toSeconds(timeAfterLoading - timeBeforeLoading);
+		System.out.println("EXTRACTED TOTAL: " + readCount + " patients in " + totalExtractionTime + " seconds, " + (totalExtractionTime / 60) + " minutes. ");
+		System.out.println("TRANSFORMED TOTAL: " + readCount + " patients in " + totalTransformTime + " seconds, " + (totalTransformTime / 60) + " minutes. ");
+		System.out.println("Total Resources size created " +  (sizeOfResource * readCount)/1000000 + "MB");
 
-		long milliSeconds = TimeUnit.MILLISECONDS.toMillis(timeAfterLoading - timeBeforeLoading);
-
-		System.out.println("EXTRACTED: " + patients.size() + " patients in " + milliSeconds + " milliSeconds, " + seconds + " seconds, " + (seconds / 60) + " minutes. ");
-
-		//TRANSFORM
-		timeBeforeLoading = new Date().getTime();
-		StringBuilder str = new StringBuilder();
-		str.append( "COUNT, IDENTIFIER, ACTIVE, NAME, TELECOM, GENDER, BIRTH DATE, DECEASED, ADDRESS, " +
-			"MARITAL STATUS, MULTIPLE BIRTH, EOL\n");
-
-		for (IBaseResource var : patients) {
-			//EXTRACT
-			transformPatientToCSV(str, (Patient) var);
-		}
-
-		timeAfterLoading = new Date().getTime();
-		seconds = TimeUnit.MILLISECONDS.toSeconds(timeAfterLoading - timeBeforeLoading);
-		milliSeconds = TimeUnit.MILLISECONDS.toMillis(timeAfterLoading - timeBeforeLoading);
-
-		System.out.println("TRANSFORMED: " + patients.size() + " patients in " + milliSeconds + " milliSeconds, " + seconds + " seconds, " + (seconds / 60) + " minutes. ");
-
-		// LOAD
-		System.out.println("Loaded " + patients.size() + " patients!");
+		System.out.println("Loaded " + readCount + " patients!");
 		theServletResponse.setContentType("text/plain");
 		theServletResponse.getWriter().write(str.toString());
 		theServletResponse.getWriter().close();
 	}
 
-	private void transformPatientToCSV(StringBuilder str, Patient var) {
+	private void resetCounters() {
+		sizeOfResource= 0;
+		totalExtractionTime = 0;
+		totalTransformTime = 0;
+		readCount = 0;
+		extractCount=0;
+		str = new StringBuilder();
+		str.append( "COUNT, IDENTIFIER, ACTIVE, NAME, TELECOM, GENDER, BIRTH DATE, DECEASED, ADDRESS, " +
+			"MARITAL STATUS, MULTIPLE BIRTH, EOL\n");
+	}
+
+	//TRANSFORM
+	private void transformBundleToCSV(List<IBaseResource> patientsList){
+
+		long timeBeforeLoading = new Date().getTime();
+
+		for (IBaseResource var : patientsList) {
+			//EXTRACT
+			transformPatientToCSV((Patient) var);
+		}
+
+		long timeAfterLoading = new Date().getTime();
+		long seconds = TimeUnit.MILLISECONDS.toSeconds(timeAfterLoading - timeBeforeLoading);
+		long milliSeconds = TimeUnit.MILLISECONDS.toMillis(timeAfterLoading - timeBeforeLoading);
+
+		totalTransformTime += seconds;
+
+		System.out.println("TRANSFORMED: " + patientsList.size() + " patients in " + milliSeconds + " milliSeconds, " + seconds + " seconds, " + (seconds / 60) + " minutes. ");
+	}
+
+	private void transformPatientToCSV(Patient var) {
 		str.append(++extractCount);
 		str.append(", ");
 
@@ -360,13 +397,13 @@ public class PatientRandomData {
 				break;
 			case 2:
 				gender = "female";
-			break;
+				break;
 			case 3:
 				gender = "other";
-			break;
+				break;
 			case 4:
 				gender = "unknown";
-			break;
+				break;
 
 		}
 		return gender;
