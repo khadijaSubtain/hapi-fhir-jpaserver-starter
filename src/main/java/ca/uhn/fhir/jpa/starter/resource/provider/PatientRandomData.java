@@ -99,14 +99,14 @@ public class PatientRandomData {
 
 		readCount += resultingBundle.getEntry().size();
 
-		if(resultingBundle.getEntry() != null) {
+		/*if(resultingBundle.getEntry() != null) {
 			sizeOfResource = InstrumentationAgent.getObjectSize((resultingBundle.getEntry().get(0)));
-		}
+		}*/
 
 		long extractionTimeFirstPage = TimeUnit.MILLISECONDS.toSeconds(timeAfterLoadingFirstPage - timeBeforeLoadingFirstPage);
 		totalExtractionTime += extractionTimeFirstPage;
 
-		System.out.println("EXTRACT: First extraction of bundle size : " + resultingBundle.getEntry().size() + " took: " + extractionTimeFirstPage + " seconds, " + (extractionTimeFirstPage / 60) + " minutes. ");
+		System.out.println("EXTRACT: First extraction of bundle size " + resultingBundle.getEntry().size() + " took: " + extractionTimeFirstPage + " seconds, " + (extractionTimeFirstPage / 60) + " minutes. ");
 
 		//TRANSFORM: Transform bundle entries to string in CSV format
 		transformBundleToCSV(BundleUtil.toListOfResources(ctx, resultingBundle));
@@ -128,10 +128,13 @@ public class PatientRandomData {
 			long extractionTimeNextPage = TimeUnit.MILLISECONDS.toSeconds(timeAfterLoadingPage - timeBeforeLoadingPage);
 			totalExtractionTime += extractionTimeNextPage;
 
-			System.out.println("EXTRACT: Next Page extraction of bundle size : " + resultingBundle.getEntry().size() + " took: " + extractionTimeNextPage + " seconds, " + (extractionTimeNextPage / 60) + " minutes. ");
+			System.out.println("EXTRACT: Next Page extraction of bundle size " + resultingBundle.getEntry().size() + " took: " + extractionTimeNextPage + " seconds, " + (extractionTimeNextPage / 60) + " minutes. ");
 
 			//TRANSFORM: Transform bundle entries to string in CSV format
 			transformBundleToCSV(BundleUtil.toListOfResources(ctx, resultingBundle));
+
+			System.out.println("EXTRACTED TOTAL: " + readCount + " patients in " + totalExtractionTime + " seconds, " + (totalExtractionTime / 60) + " minutes. ");
+			System.out.println("TRANSFORMED TOTAL: " + readCount + " patients in " + totalTransformTime + " seconds, " + (totalTransformTime / 60) + " minutes. ");
 		}
 
 		System.out.println("EXTRACTED TOTAL: " + readCount + " patients in " + totalExtractionTime + " seconds, " + (totalExtractionTime / 60) + " minutes. ");
@@ -171,7 +174,7 @@ public class PatientRandomData {
 
 		totalTransformTime += seconds;
 
-		System.out.println("TRANSFORMED: " + patientsList.size() + " patients in " + milliSeconds + " milliSeconds, " + seconds + " seconds, " + (seconds / 60) + " minutes. ");
+		System.out.println("TRANSFORM: Transformed: " + patientsList.size() + " patients in " + milliSeconds + " milliSeconds, " + seconds + " seconds, " + (seconds / 60) + " minutes. ");
 	}
 
 	private void transformPatientToCSV(Patient var) {
