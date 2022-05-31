@@ -17,6 +17,8 @@ import org.springframework.context.annotation.Configuration;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
+import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
 
@@ -128,18 +130,31 @@ public class PatientRandomData {
 			long extractionTimeNextPage = TimeUnit.MILLISECONDS.toSeconds(timeAfterLoadingPage - timeBeforeLoadingPage);
 			totalExtractionTime += extractionTimeNextPage;
 
+			System.out.println();
 			System.out.println("EXTRACT: Next Page extraction of bundle size " + resultingBundle.getEntry().size() + " took: " + extractionTimeNextPage + " seconds, " + (extractionTimeNextPage / 60) + " minutes. ");
 
 			//TRANSFORM: Transform bundle entries to string in CSV format
 			transformBundleToCSV(BundleUtil.toListOfResources(ctx, resultingBundle));
 
+			System.out.println();
 			System.out.println("EXTRACTED TOTAL: " + readCount + " patients in " + totalExtractionTime + " seconds, " + (totalExtractionTime / 60) + " minutes. ");
-			System.out.println("TRANSFORMED TOTAL: " + readCount + " patients in " + totalTransformTime + " seconds, " + (totalTransformTime / 60) + " minutes. ");
+
+			System.out.println("TRANSFORMED TOTAL: " + readCount + " patients in " + totalTransformTime + " milliSeconds, " +
+				round((totalTransformTime / 1000.0), 2) + " seconds, " + round((totalTransformTime / 60000.0), 2) + " minutes. ");
+
+			System.out.println();
 		}
 
+		System.out.println();
+
 		System.out.println("EXTRACTED TOTAL: " + readCount + " patients in " + totalExtractionTime + " seconds, " + (totalExtractionTime / 60) + " minutes. ");
-		System.out.println("TRANSFORMED TOTAL: " + readCount + " patients in " + totalTransformTime + " seconds, " + (totalTransformTime / 60) + " minutes. ");
-		System.out.println("Total Resources size created " +  (sizeOfResource * readCount)/1000000 + "MB");
+
+		System.out.println("TRANSFORMED TOTAL: " + readCount + " patients in " + totalTransformTime + " milliSeconds, " +
+			round((totalTransformTime / 1000.0), 2) + " seconds, " + round((totalTransformTime / 60000.0), 2) + " minutes. ");
+
+		System.out.println();
+
+		//System.out.println("Total Resources size created " +  (sizeOfResource * readCount)/1000000 + "MB");
 
 		System.out.println("Loaded " + readCount + " patients!");
 		theServletResponse.setContentType("text/plain");
@@ -158,6 +173,14 @@ public class PatientRandomData {
 			"MARITAL STATUS, MULTIPLE BIRTH, EOL\n");
 	}
 
+	public static double round(double value, int places) {
+		if (places < 0) throw new IllegalArgumentException();
+
+		BigDecimal bd = BigDecimal.valueOf(value);
+		bd = bd.setScale(places, RoundingMode.HALF_UP);
+		return bd.doubleValue();
+	}
+
 	//TRANSFORM
 	private void transformBundleToCSV(List<IBaseResource> patientsList){
 
@@ -172,7 +195,7 @@ public class PatientRandomData {
 		long seconds = TimeUnit.MILLISECONDS.toSeconds(timeAfterLoading - timeBeforeLoading);
 		long milliSeconds = TimeUnit.MILLISECONDS.toMillis(timeAfterLoading - timeBeforeLoading);
 
-		totalTransformTime += seconds;
+		totalTransformTime += milliSeconds;
 
 		System.out.println("TRANSFORM: Transformed: " + patientsList.size() + " patients in " + milliSeconds + " milliSeconds, " + seconds + " seconds, " + (seconds / 60) + " minutes. ");
 	}
