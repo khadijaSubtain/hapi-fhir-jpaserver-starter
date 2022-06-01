@@ -6,11 +6,9 @@ import ca.uhn.fhir.jpa.rp.r4.PatientResourceProvider;
 import ca.uhn.fhir.rest.annotation.Operation;
 import ca.uhn.fhir.rest.client.api.IGenericClient;
 import ca.uhn.fhir.util.BundleUtil;
-import org.hl7.fhir.AdministrativeGender;
 import org.hl7.fhir.instance.model.api.IBaseBundle;
 import org.hl7.fhir.instance.model.api.IBaseResource;
 import org.hl7.fhir.r4.model.*;
-import org.hl7.fhir.r4.model.Enumeration;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Configuration;
 
@@ -24,7 +22,7 @@ import java.util.concurrent.TimeUnit;
 
 @Configuration
 public class PatientRandomData {
-	public static int count = 400000;
+	public static int count = 500000;
 	public static int extractCount = 0;
 	@Autowired
 	PatientResourceProvider patientResourceProvider;
@@ -105,15 +103,16 @@ public class PatientRandomData {
 			sizeOfResource = InstrumentationAgent.getObjectSize((resultingBundle.getEntry().get(0)));
 		}*/
 
-		long extractionTimeFirstPage = TimeUnit.MILLISECONDS.toSeconds(timeAfterLoadingFirstPage - timeBeforeLoadingFirstPage);
+		long extractionTimeFirstPage = TimeUnit.MILLISECONDS.toMillis(timeAfterLoadingFirstPage - timeBeforeLoadingFirstPage);
+
 		totalExtractionTime += extractionTimeFirstPage;
 
 		System.out.println();
 		System.out.println("EXTRACT: First extraction of bundle size " + resultingBundle.getEntry().size() +
-			" took: " + extractionTimeFirstPage + " seconds, " + round((extractionTimeFirstPage / 60), 2) + " minutes. ");
+			" took: " + round((extractionTimeFirstPage/1000.0), 2) + " seconds, " + round((extractionTimeFirstPage / 60000.0), 2) + " minutes. ");
 
 		//TRANSFORM: Transform bundle entries to string in CSV format
-		transformBundleToCSV(BundleUtil.toListOfResources(ctx, resultingBundle));
+		transformPageToCSV(BundleUtil.toListOfResources(ctx, resultingBundle));
 
 		//EXTRACT: Load the subsequent pages
 		while (resultingBundle.getLink(IBaseBundle.LINK_NEXT) != null ) {
@@ -126,29 +125,26 @@ public class PatientRandomData {
 				.execute();
 
 			long timeAfterLoadingPage = new Date().getTime();
-
+			//getting the size of records
 			readCount += resultingBundle.getEntry().size();
-
-			long extractionTimeNextPage = TimeUnit.MILLISECONDS.toSeconds(timeAfterLoadingPage - timeBeforeLoadingPage);
+			// consecutive time taken to load first and subsequent pages
+			long extractionTimeNextPage = TimeUnit.MILLISECONDS.toMillis(timeAfterLoadingPage - timeBeforeLoadingPage);
 			totalExtractionTime += extractionTimeNextPage;
 
 			System.out.println();
 			System.out.println("EXTRACT: Next Page extraction of bundle size " + resultingBundle.getEntry().size() +
-				" took: " + extractionTimeNextPage + " seconds, " + round((extractionTimeNextPage / 60), 2) + " minutes.");
+			" took: " + round((extractionTimeNextPage/1000.0), 2) + " seconds, " + round((extractionTimeNextPage / 60000.0), 2) + " minutes. ");
 
 			//TRANSFORM: Transform bundle entries to string in CSV format
-			transformBundleToCSV(BundleUtil.toListOfResources(ctx, resultingBundle));
+			transformPageToCSV(BundleUtil.toListOfResources(ctx, resultingBundle));
 
-			System.out.println("EXTRACTED TOTAL: " + readCount + " patients in " + totalExtractionTime + " seconds, " + round((totalExtractionTime / 60.0), 2) + " minutes. ");
+			System.out.println("EXTRACTED TOTAL: " + readCount + " patients in " + round((totalExtractionTime/1000.0), 2)  + " seconds, " + round((totalExtractionTime / 60000.0), 2) + " minutes. ");
 
 			System.out.println("TRANSFORMED TOTAL: " + readCount + " patients in " + totalTransformTime + " milliSeconds, " +
 				round((totalTransformTime / 1000.0), 2) + " seconds, " + round((totalTransformTime / 60000.0), 2) + " minutes.\r\n");
 
 		}
-
-
 		System.out.println("EXTRACTED TOTAL: " + readCount + " patients in " + totalExtractionTime + " seconds, " + round((totalExtractionTime / 60.0), 2) + " minutes. ");
-
 		System.out.println("TRANSFORMED TOTAL: " + readCount + " patients in " + totalTransformTime + " milliSeconds, " +
 			round((totalTransformTime / 1000.0), 2) + " seconds, " + round((totalTransformTime / 60000.0), 2) + " minutes.\r\n");
 
@@ -180,8 +176,7 @@ public class PatientRandomData {
 	}
 
 	//TRANSFORM
-	private void transformBundleToCSV(List<IBaseResource> patientsList){
-
+	private void transformPageToCSV(List<IBaseResource> patientsList){
 		long timeBeforeLoading = new Date().getTime();
 
 		for (IBaseResource var : patientsList) {
@@ -197,7 +192,6 @@ public class PatientRandomData {
 
 		System.out.println("TRANSFORM: Transformed: " + patientsList.size() + " patients in " + milliSeconds + " milliSeconds, " +
 			seconds + " seconds, " + round((seconds / 60.0), 2) + " minutes. \r\n");
-
 	}
 
 	private void transformPatientToCSV(Patient var) {
