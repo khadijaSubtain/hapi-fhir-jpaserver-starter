@@ -2,6 +2,7 @@ package ca.uhn.fhir.jpa.starter.resource.provider;
 
 import ca.uhn.fhir.context.FhirContext;
 import ca.uhn.fhir.jpa.api.dao.IFhirResourceDao;
+import ca.uhn.fhir.jpa.rp.r4.OrganizationResourceProvider;
 import ca.uhn.fhir.jpa.rp.r4.PatientResourceProvider;
 import ca.uhn.fhir.rest.annotation.Operation;
 import ca.uhn.fhir.rest.client.api.IGenericClient;
@@ -22,10 +23,15 @@ import java.util.concurrent.TimeUnit;
 
 @Configuration
 public class PatientRandomData {
-	public static int count = 500000;
+	public static int count = 1;
 	public static int extractCount = 0;
 	@Autowired
 	PatientResourceProvider patientResourceProvider;
+
+	@Autowired
+	OrganizationResourceProvider organizationResourceProvider;
+
+
 	// Create a client
 	FhirContext ctx = FhirContext.forR4();
 	IGenericClient client = ctx.newRestfulGenericClient("http://localhost:8080/fhir");
@@ -130,21 +136,25 @@ public class PatientRandomData {
 			// consecutive time taken to load first and subsequent pages
 			long extractionTimeNextPage = TimeUnit.MILLISECONDS.toMillis(timeAfterLoadingPage - timeBeforeLoadingPage);
 			totalExtractionTime += extractionTimeNextPage;
-
+/*
 			System.out.println();
 			System.out.println("EXTRACT: Next Page extraction of bundle size " + resultingBundle.getEntry().size() +
 			" took: " + round((extractionTimeNextPage/1000.0), 2) + " seconds, " + round((extractionTimeNextPage / 60000.0), 2) + " minutes. ");
-
+*/
 			//TRANSFORM: Transform bundle entries to string in CSV format
 			transformPageToCSV(BundleUtil.toListOfResources(ctx, resultingBundle));
-
+/*
 			System.out.println("EXTRACTED TOTAL: " + readCount + " patients in " + round((totalExtractionTime/1000.0), 2)  + " seconds, " + round((totalExtractionTime / 60000.0), 2) + " minutes. ");
 
 			System.out.println("TRANSFORMED TOTAL: " + readCount + " patients in " + totalTransformTime + " milliSeconds, " +
 				round((totalTransformTime / 1000.0), 2) + " seconds, " + round((totalTransformTime / 60000.0), 2) + " minutes.\r\n");
 
+ */
+
 		}
-		System.out.println("EXTRACTED TOTAL: " + readCount + " patients in " + totalExtractionTime + " seconds, " + round((totalExtractionTime / 60.0), 2) + " minutes. ");
+
+		System.out.println("EXTRACTED TOTAL: " + readCount + " patients in " + round((totalExtractionTime/1000.0), 2)  + " seconds, " + round((totalExtractionTime / 60000.0), 2) + " minutes. ");
+
 		System.out.println("TRANSFORMED TOTAL: " + readCount + " patients in " + totalTransformTime + " milliSeconds, " +
 			round((totalTransformTime / 1000.0), 2) + " seconds, " + round((totalTransformTime / 60000.0), 2) + " minutes.\r\n");
 
@@ -190,8 +200,8 @@ public class PatientRandomData {
 
 		totalTransformTime += milliSeconds;
 
-		System.out.println("TRANSFORM: Transformed: " + patientsList.size() + " patients in " + milliSeconds + " milliSeconds, " +
-			seconds + " seconds, " + round((seconds / 60.0), 2) + " minutes. \r\n");
+		//System.out.println("TRANSFORM: Transformed: " + patientsList.size() + " patients in " + milliSeconds + " milliSeconds, " +
+			//seconds + " seconds, " + round((seconds / 60.0), 2) + " minutes. \r\n");
 	}
 
 	private void transformPatientToCSV(Patient var) {
@@ -246,19 +256,43 @@ public class PatientRandomData {
 		str.append("-1 ");
 		str.append("\n ");
 
-	/*	str.append(", PRACTITIONER: ");
+		str.append(", PRACTITIONER: ");
 		//practitioner family name
 		str.append(var.getGeneralPractitioner().get(0));
-	 */
+
 
 	}
 
 	//------------------------------------CREATING PATIENT-------------------------------------------------------------
 
+	@Operation(name = "$insertOrganization", manualResponse = true, manualRequest = true, idempotent = true)
+	public void insertingOrganization(HttpServletRequest theServletRequest, HttpServletResponse theServletResponse) throws IOException {
+		IFhirResourceDao dao = organizationResourceProvider.getDao();
+
+		dao.create(createRandomOrganization());
+
+		theServletResponse.setContentType("text/plain");
+		theServletResponse.getWriter().write("Organization inserted");
+		theServletResponse.getWriter().close();
+	}
+
+	@Operation(name = "$retrievingOrganizations", idempotent = true)
+	public Bundle retrievingOrganizations()  {
+		return client
+			.search()
+			.forResource(Organization.class)
+			.returnBundle(Bundle.class)
+			.execute();
+	}
+
+	public Organization createRandomOrganization(){
+		Organization org = new Organization();
+		return  org;
+	}
+
 	//Insert Patient to Bundle
 	public Patient createRandomPatient() {
 
-		IFhirResourceDao dao = patientResourceProvider.getDao();
 		Patient patient = new Patient();
 
 		//inserting random value for identifier
@@ -268,7 +302,9 @@ public class PatientRandomData {
 
 		HumanName humanName = new HumanName();
 		//set family
-		humanName.setFamily(this.randomStringGenerator());
+	//	humanName.setFamily(this.randomStringGenerator());
+
+		humanName.setFamily("Harry");
 
 		//set given
 		List<StringType> givenHumanNameList = new ArrayList<StringType>();
@@ -313,15 +349,19 @@ public class PatientRandomData {
 		patient.setActive(this.isActive());
 
 		//Inserting Practitioner
-		/*
-		Reference reference = new Reference("http://fhir.hl7.org/svc/StructureDefinition/c8973a22-2b5b-4e76-9c66-00639c99e61b");
-		reference.setType("http://fhir.hl7.org/svc/StructureDefinition/c8973a22-2b5b-4e76-9c66-00639c99e61b");
+
+		//Reference reference = new Reference("http://fhir.hl7.org/svc/StructureDefinition/c8973a22-2b5b-4e76-9c66-00639c99e61b");
+		//reference.setType("http://fhir.hl7.org/svc/StructureDefinition/c8973a22-2b5b-4e76-9c66-00639c99e61b");
+
+		Reference reference = new Reference("GeneralPractitioner/12345");
+		//reference.set("Practitioner");
 
 
 		List<Reference> referenceList = new ArrayList<>();
 		referenceList.add(reference);
-		patient.setGeneralPractitioner(referenceList);
-		*/
+		//patient.setGeneralPractitioner(referenceList);
+		patient.setManagingOrganization(new Reference("Organization/1000102"));
+
 
 		return patient;
 	}
