@@ -1,0 +1,15 @@
+{
+  "resourceType": "Parameters",
+  "parameter": [
+    {
+      "name": "limit",
+      "valueInteger": 1000
+    },{
+      "name": "expungeDeletedResources",
+      "valueBoolean": true
+    },{
+      "name": "expungePreviousVersions",
+      "valueBoolean": true
+    }
+  ]
+}
