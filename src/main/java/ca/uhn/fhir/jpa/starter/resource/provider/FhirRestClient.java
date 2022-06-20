@@ -1,6 +1,4 @@
 package ca.uhn.fhir.jpa.starter.resource.provider;
-
-import com.apicatalog.jsonld.http.DefaultHttpClient;
 import org.apache.http.HttpResponse;
 import org.apache.http.client.ClientProtocolException;
 import org.apache.http.client.HttpClient;
@@ -11,7 +9,6 @@ import org.apache.http.impl.client.HttpClientBuilder;
 
 import java.io.*;
 import java.util.Date;
-import java.util.List;
 import java.util.Scanner;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
@@ -20,7 +17,12 @@ import java.util.stream.Stream;
 
 public class FhirRestClient {
 
-	private static final String URL_GET_PATIETNT = "http://localhost:8080/fhir/Patient/1000792/_history/1";
+	/* FOR GET URL
+	http://localhost:8080/fhir/$retrievingAllRandomPatients
+	http://localhost:8080/fhir/$retrievingBundle
+   http://localhost:8080/fhir/Patient/1000792/_history/1
+	 */
+	private static final String URL_GET_PATIETNT = "http://localhost:8080/fhir/$retrievingBundle";
 
 	private static final String POST_REQUEST = "http://localhost:8080/fhir/";
 	private static final String DIRECTORY_PATH = "/Users/khadijasubtain/Desktop/Synthea data/fhir/";
@@ -37,11 +39,11 @@ public class FhirRestClient {
 
 	public static void main(String[] args) {
 		FhirRestClient client = new FhirRestClient();
-		// client.getRequest(URL_GET_PATIETNT);
-		//	client.printResponse(client.getRequest(URL_GET_PATIETNT));
+		 //client.getRequest(URL_GET_PATIETNT);
+			client.printResponse(client.getRequest(URL_GET_PATIETNT));
 		//	System.out.println(client.readFile(FILE_PATH));
 		// client.postRequest(POST_REQUEST, client.readFile(FILE_PATH), true);
-		 client.insertData();
+		// client.insertData();
 		//client.expungingData(EXPUNGING_DROP_ALL_DATA);
 
 	}
@@ -62,7 +64,7 @@ public class FhirRestClient {
 		long seconds = TimeUnit.MILLISECONDS.toSeconds(timeAfterInserting - timeBeforeInserting);
 		long milliSeconds = TimeUnit.MILLISECONDS.toMillis(timeAfterInserting - timeBeforeInserting);
 
-		System.out.println("INSERTING TIME: "+ insertCount +" inserts is " + (seconds *60) +" MINUTES, "+ seconds + " SECONDS, and" + milliSeconds + " MILLISECONDS.");
+		System.out.println("INSERTING TIME: "+ insertCount +" inserts is " + (seconds / 60) +" MINUTES, "+ seconds + " SECONDS, and " + milliSeconds + " MILLISECONDS.");
 	}
 
 	//---------------------------------------GET REQUEST-------------------------------------------------
