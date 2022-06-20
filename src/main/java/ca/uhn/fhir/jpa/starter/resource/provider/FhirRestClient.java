@@ -10,9 +10,11 @@ import org.apache.http.entity.StringEntity;
 import org.apache.http.impl.client.HttpClientBuilder;
 
 import java.io.*;
+import java.util.Date;
 import java.util.List;
 import java.util.Scanner;
 import java.util.Set;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -21,7 +23,7 @@ public class FhirRestClient {
 	private static final String URL_GET_PATIETNT = "http://localhost:8080/fhir/Patient/1000792/_history/1";
 
 	private static final String POST_REQUEST = "http://localhost:8080/fhir/";
-	private static final String DIRECTORY_PATH = "/Users/khadijasubtain/Desktop/Synthea data/fhir";
+	private static final String DIRECTORY_PATH = "/Users/khadijasubtain/Desktop/Synthea data/fhir/";
 
 	private static final String EXPUNGING_DATA_URL = "http://localhost:8080/fhir/$expunge";
 	private static final String EXPUNGING_SYSTEM_LEVEL_DATA= "/Users/khadijasubtain/Documents/IntelliJ_workspace/FHIR/hapi-fhir-jpaserver-starter/src/main/resources/requests/expunge_system_level_data.json";
@@ -38,8 +40,8 @@ public class FhirRestClient {
 		// client.getRequest(URL_GET_PATIETNT);
 		//	client.printResponse(client.getRequest(URL_GET_PATIETNT));
 		//	System.out.println(client.readFile(FILE_PATH));
-		// client.postRequest(POST_REQUEST, client.readFile(FILE_PATH));
-		//client.insertData();
+		// client.postRequest(POST_REQUEST, client.readFile(FILE_PATH), true);
+		 client.insertData();
 		//client.expungingData(EXPUNGING_DROP_ALL_DATA);
 
 	}
@@ -47,10 +49,20 @@ public class FhirRestClient {
 	public void insertData(){
 		insertCount = 0;
 		Set<String> set = this.listFilesUsingJavaIO(DIRECTORY_PATH);
+		long timeBeforeInserting = new Date().getTime();
+
 		for(String str : set){
-			this.postRequest(POST_REQUEST, this.readFile(DIRECTORY_PATH + str));
-			System.out.println(insertCount + ": Bundles inserted.");
+			if(str.charAt(0) != '.') {
+				this.postRequest(POST_REQUEST, this.readFile(DIRECTORY_PATH + str), false);
+				System.out.println(insertCount + ": Bundles inserted.");
+			}
 		}
+
+		long timeAfterInserting = new Date().getTime();
+		long seconds = TimeUnit.MILLISECONDS.toSeconds(timeAfterInserting - timeBeforeInserting);
+		long milliSeconds = TimeUnit.MILLISECONDS.toMillis(timeAfterInserting - timeBeforeInserting);
+
+		System.out.println("INSERTING TIME: "+ insertCount +" inserts is " + (seconds *60) +" MINUTES, "+ seconds + " SECONDS, and" + milliSeconds + " MILLISECONDS.");
 	}
 
 	//---------------------------------------GET REQUEST-------------------------------------------------
@@ -109,7 +121,7 @@ public class FhirRestClient {
 	 * @param urlString
 	 * @param jsonFilePath that contains the path to our json file from synthea
 	 */
-	public void postRequest(String urlString, String jsonFilePath) {
+	public void postRequest(String urlString, String jsonFilePath, boolean printResponse) {
 		try {
 			//create a client
 			HttpClient httpClient = HttpClientBuilder.create().build();
@@ -125,13 +137,17 @@ public class FhirRestClient {
 			HttpResponse response = httpClient.execute(post);
 			BufferedReader rd = new BufferedReader(new InputStreamReader(response.getEntity().getContent()));
 			String line = " ";
+
 			while ((line = rd.readLine()) != null) {
 				System.out.println(line);
 			}
+
 			if (response.getStatusLine().getStatusCode() != 200) {
 				throw new RuntimeException("Failed : HTTP error code : " + response.getStatusLine().getStatusCode());
 			} else {
-				printResponse(response);
+				if(printResponse == true) {
+					printResponse(response);
+				}
 				insertCount++;
 			}
 		} catch (
@@ -168,7 +184,7 @@ public class FhirRestClient {
 	}
 
 	public void expungingData(String requestPath){
-			this.postRequest(EXPUNGING_DATA_URL, this.readFile(requestPath));
+			this.postRequest(EXPUNGING_DATA_URL, this.readFile(requestPath), true);
 	}
 }
 
