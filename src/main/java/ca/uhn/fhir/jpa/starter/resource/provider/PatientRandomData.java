@@ -40,12 +40,20 @@ public class PatientRandomData {
 	long totalExtractionTime = 0;
 	long totalTransformTime = 0;
 	int readCount = 0;
-	long sizeOfResource= 0;
+	long sizeOfResource = 0;
 
 	//------------------------------------EXTENDED OPERATIONS-------------------------------------------------------------------
 
+	public static double round(double value, int places) {
+		if (places < 0) throw new IllegalArgumentException();
+
+		BigDecimal bd = BigDecimal.valueOf(value);
+		bd = bd.setScale(places, RoundingMode.HALF_UP);
+		return bd.doubleValue();
+	}
+
 	@Operation(name = "$retrievingBundle", idempotent = true)
-	public Bundle retrievingBundle()  {
+	public Bundle retrievingBundle() {
 		return client
 			.search()
 			.forResource(Patient.class)
@@ -61,8 +69,8 @@ public class PatientRandomData {
 		Patient randomPatient;
 		int i = 0;
 		long timeBeforeInserting = new Date().getTime();
-		for ( ; i < count; i++) {
-			if(i % 100 == 0) {
+		for (; i < count; i++) {
+			if (i % 100 == 0) {
 				System.out.println("Current Count: " + i);
 			}
 			randomPatient = this.createRandomPatient();
@@ -72,7 +80,7 @@ public class PatientRandomData {
 		long timeAfterInserting = new Date().getTime();
 		long seconds = TimeUnit.MILLISECONDS.toSeconds(timeAfterInserting - timeBeforeInserting);
 		long milliSeconds = TimeUnit.MILLISECONDS.toMillis(timeAfterInserting - timeBeforeInserting);
-		System.out.print("INSERTED: " + count+ " patients in " + milliSeconds + " milliSeconds, " + seconds + " seconds, and " + (seconds / 60) + " minutes. ");
+		System.out.print("INSERTED: " + count + " patients in " + milliSeconds + " milliSeconds, " + seconds + " seconds, and " + (seconds / 60) + " minutes. ");
 
 		theServletResponse.setContentType("text/plain");
 		theServletResponse.getWriter().write(i + " patients inserted");
@@ -115,15 +123,15 @@ public class PatientRandomData {
 
 		System.out.println();
 		System.out.println("EXTRACT: First extraction of bundle size " + resultingBundle.getEntry().size() +
-			" took: " + round((extractionTimeFirstPage/1000.0), 2) + " seconds, " + round((extractionTimeFirstPage / 60000.0), 2) + " minutes. ");
+			" took: " + round((extractionTimeFirstPage / 1000.0), 2) + " seconds, " + round((extractionTimeFirstPage / 60000.0), 2) + " minutes. ");
 
 		//TRANSFORM: Transform bundle entries to string in CSV format
 		transformPageToCSV(BundleUtil.toListOfResources(ctx, resultingBundle));
 
 		//EXTRACT: Load the subsequent pages
-		while (resultingBundle.getLink(IBaseBundle.LINK_NEXT) != null ) {
+		while (resultingBundle.getLink(IBaseBundle.LINK_NEXT) != null) {
 
-			long	timeBeforeLoadingPage = new Date().getTime();
+			long timeBeforeLoadingPage = new Date().getTime();
 
 			resultingBundle = client
 				.loadPage()
@@ -153,7 +161,7 @@ public class PatientRandomData {
 
 		}
 
-		System.out.println("EXTRACTED TOTAL: " + readCount + " patients in " + round((totalExtractionTime/1000.0), 2)  + " seconds, " + round((totalExtractionTime / 60000.0), 2) + " minutes. ");
+		System.out.println("EXTRACTED TOTAL: " + readCount + " patients in " + round((totalExtractionTime / 1000.0), 2) + " seconds, " + round((totalExtractionTime / 60000.0), 2) + " minutes. ");
 
 		System.out.println("TRANSFORMED TOTAL: " + readCount + " patients in " + totalTransformTime + " milliSeconds, " +
 			round((totalTransformTime / 1000.0), 2) + " seconds, " + round((totalTransformTime / 60000.0), 2) + " minutes.\r\n");
@@ -167,26 +175,18 @@ public class PatientRandomData {
 	}
 
 	private void resetCounters() {
-		sizeOfResource= 0;
+		sizeOfResource = 0;
 		totalExtractionTime = 0;
 		totalTransformTime = 0;
 		readCount = 0;
-		extractCount=0;
+		extractCount = 0;
 		str = new StringBuilder();
-		str.append( "COUNT, IDENTIFIER, ACTIVE, NAME, TELECOM, GENDER, BIRTH DATE, DECEASED, ADDRESS, " +
+		str.append("COUNT, IDENTIFIER, ACTIVE, NAME, TELECOM, GENDER, BIRTH DATE, DECEASED, ADDRESS, " +
 			"MARITAL STATUS, MULTIPLE BIRTH, EOL\n");
 	}
 
-	public static double round(double value, int places) {
-		if (places < 0) throw new IllegalArgumentException();
-
-		BigDecimal bd = BigDecimal.valueOf(value);
-		bd = bd.setScale(places, RoundingMode.HALF_UP);
-		return bd.doubleValue();
-	}
-
 	//TRANSFORM
-	private void transformPageToCSV(List<IBaseResource> patientsList){
+	private void transformPageToCSV(List<IBaseResource> patientsList) {
 		long timeBeforeLoading = new Date().getTime();
 
 		for (IBaseResource var : patientsList) {
@@ -201,7 +201,7 @@ public class PatientRandomData {
 		totalTransformTime += milliSeconds;
 
 		//System.out.println("TRANSFORM: Transformed: " + patientsList.size() + " patients in " + milliSeconds + " milliSeconds, " +
-			//seconds + " seconds, " + round((seconds / 60.0), 2) + " minutes. \r\n");
+		//seconds + " seconds, " + round((seconds / 60.0), 2) + " minutes. \r\n");
 	}
 
 	private void transformPatientToCSV(Patient var) {
@@ -209,56 +209,84 @@ public class PatientRandomData {
 		str.append(", ");
 
 		//identifier
-		str.append(var.getIdentifier().get(0).getValue());
-		str.append(",");
+		if (var.getIdentifier() != null && var.getIdentifier().size() > 0) {
+			str.append(var.getIdentifier().get(0).getValue());
+			str.append(",");
+		}
 
 		//active
-		str.append(var.getActive() ? "true" : "false");
-		str.append(",");
+		if (var != null) {
+			str.append(var.getActive() ? "true" : "false");
+			str.append(",");
+		}
 
 		//family name
-		str.append(var.getName().get(0).getFamily());
-		str.append(" - ");
+		if (var != null && var.getName().size() > 0 && var.getName().get(0).getFamily() != null) {
+			str.append(var.getName().get(0).getFamily());
+			str.append(" - ");
+		}
 		//givenName
-		str.append(var.getName().get(0).getGiven().get(0).getValue());
-		str.append(", ");
+		if (var != null && var.getName().size() > 0 && var.getName().get(0).getGiven() != null) {
+			str.append(var.getName().get(0).getGiven().get(0).getValue());
+			str.append(", ");
+		}
 
 		//telecom
-		str.append(var.getTelecom().get(0).getValue());
-		str.append(", ");
+		if (var != null && var.getTelecom().size() > 0 && var.getTelecom() != null) {
+			str.append(var.getTelecom().get(0).getValue());
+			str.append(", ");
+		}
 
 		//Gender
-		str.append(var.getGender().toCode());
-		str.append(", ");
+		if (var != null && var.getGender() != null) {
+			str.append(var.getGender().toCode());
+			str.append(", ");
+		}
 
 		//Date of Birth
-		str.append(var.getBirthDate().getYear() +"-" +	var.getBirthDate().getMonth() +
-			"-"+ var.getBirthDate().getDate());
-		str.append(", ");
+		if (var != null && var.getBirthDate() != null) {
+			str.append(var.getBirthDate().getYear() + "-" + var.getBirthDate().getMonth() +
+				"-" + var.getBirthDate().getDate());
+			str.append(", ");
+		}
 
 		//deceased
-		str.append((var.getDeceasedBooleanType().getValue() ? "true" : "false"));
-		str.append(", ");
+		if (var != null && var.getDeceasedBooleanType() != null && var.getDeceasedBooleanType().getValue() != null) {
+			str.append((var.getDeceasedBooleanType().getValue() ? "true" : "false"));
+			str.append(", ");
+		}
 
 		//address
-		str.append(var.getAddress().get(0).getLine().get(0).getValue());
-		str.append(", ");
+		if (var != null && var.getAddress().size() > 0 && var.getAddress() != null) {
+			str.append(var.getAddress().get(0).getLine().get(0).getValue());
+			str.append(", ");
+		}
 
 		//married
-		str.append(var.getMaritalStatus().getTextElement());
-		str.append(", ");
+		if (var != null && var.getMaritalStatus() != null) {
+			str.append(var.getMaritalStatus().getTextElement());
+			str.append(", ");
+		}
 
 		//multipleBirth
-		str.append((var.getMultipleBirthBooleanType().getValue() ? "true" : "false"));
-		str.append(", ");
+		if (var != null && var.getMultipleBirthBooleanType() != null) {
+			str.append((var.getMultipleBirthBooleanType().getValue() ? "true" : "false"));
+			str.append(", ");
+		}
 
-		//end of line
-		str.append("-1 ");
-		str.append("\n ");
-
-		str.append(", PRACTITIONER: ");
 		//practitioner family name
-		str.append(var.getGeneralPractitioner().get(0));
+		if (var != null && var.getGeneralPractitioner().size() > 0 && var.getGeneralPractitioner() != null) {
+			str.append(var.getGeneralPractitioner().get(0).getReference());
+			str.append(", ");
+		}
+		//Observation
+		if (var != null && var.getManagingOrganization() != null) {
+			str.append(var.getManagingOrganization().getReference());
+			str.append(", ");
+		}
+		//end of line
+		str.append(" -1 ");
+		str.append("\n ");
 
 
 	}
@@ -277,7 +305,7 @@ public class PatientRandomData {
 	}
 
 	@Operation(name = "$retrievingOrganizations", idempotent = true)
-	public Bundle retrievingOrganizations()  {
+	public Bundle retrievingOrganizations() {
 		return client
 			.search()
 			.forResource(Organization.class)
@@ -285,9 +313,9 @@ public class PatientRandomData {
 			.execute();
 	}
 
-	public Organization createRandomOrganization(){
+	public Organization createRandomOrganization() {
 		Organization org = new Organization();
-		return  org;
+		return org;
 	}
 
 	//Insert Patient to Bundle
@@ -302,7 +330,7 @@ public class PatientRandomData {
 
 		HumanName humanName = new HumanName();
 		//set family
-	//	humanName.setFamily(this.randomStringGenerator());
+		//	humanName.setFamily(this.randomStringGenerator());
 
 		humanName.setFamily("Harry");
 
@@ -342,7 +370,7 @@ public class PatientRandomData {
 		patient.setGender(Enumerations.AdministrativeGender.fromCode(this.generateRandomGender()));
 
 		//multiple birth
-		BooleanType multipleBirth= new BooleanType();
+		BooleanType multipleBirth = new BooleanType();
 		patient.setMultipleBirth(multipleBirth.setValue(this.multipleBirth()));
 
 		//Active
@@ -377,11 +405,12 @@ public class PatientRandomData {
 	 */
 
 	//generate random identifier
-	public String generateRandomIdentifier(){
+	public String generateRandomIdentifier() {
 		return (this.randomStringGenerator());
 	}
+
 	//martial status
-	public boolean multipleBirth(){
+	public boolean multipleBirth() {
 		return new Random().nextBoolean();
 	}
 	//multiple birth
@@ -409,7 +438,7 @@ public class PatientRandomData {
 	//generate random phone number
 	public String phoneNumber() {
 		long phoneNumber = 0;
-		return ""+ randomNumberOf_fixedLength(10, 9, 0);
+		return "" + randomNumberOf_fixedLength(10, 9, 0);
 	}
 
 	public int randomNumberGenerator(int max, int min) {
@@ -450,8 +479,8 @@ public class PatientRandomData {
 	//generate gender -- curently keeping male and female for synthetic data
 	public String generateRandomGender() {
 		int genderCode = this.randomNumberGenerator(4, 1);
-		String gender="";
-		switch (genderCode){
+		String gender = "";
+		switch (genderCode) {
 			case 1:
 				gender = "male";
 				break;
