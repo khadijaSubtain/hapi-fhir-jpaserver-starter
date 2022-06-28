@@ -40,7 +40,12 @@ public class FhirRestClient {
 	public static void main(String[] args) {
 		FhirRestClient client = new FhirRestClient();
 		 //client.getRequest(URL_GET_PATIETNT);
+		long beforeETLtime = new Date().getTime();
 			client.printResponse(client.getRequest(URL_GET_PATIETNT));
+		long afterETLtime = new Date().getTime();
+		long seconds = TimeUnit.MILLISECONDS.toSeconds(afterETLtime - beforeETLtime);
+		long milliSeconds = TimeUnit.MILLISECONDS.toMillis(afterETLtime - beforeETLtime);
+		System.out.println("Extraction and Loading time: MINUTES "+ seconds/60 +" SECONDS: "+ seconds + " MILLISECONDS: "+ milliSeconds);
 		//	System.out.println(client.readFile(FILE_PATH));
 		// client.postRequest(POST_REQUEST, client.readFile(FILE_PATH), true);
 		// client.insertData();

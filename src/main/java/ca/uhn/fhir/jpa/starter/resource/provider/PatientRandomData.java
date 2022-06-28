@@ -54,11 +54,15 @@ public class PatientRandomData {
 
 	@Operation(name = "$retrievingBundle", idempotent = true)
 	public Bundle retrievingBundle() {
-		return client
+		//resultsPatient.getEntry().get(0);
+		Bundle resultsPatient = client
 			.search()
 			.forResource(Patient.class)
 			.returnBundle(Bundle.class)
 			.execute();
+		System.out.println("SIZE: " + resultsPatient.getEntry().size());
+
+		return resultsPatient;
 	}
 
 	@Operation(name = "$insertPatient", manualResponse = true, manualRequest = true, idempotent = true)
@@ -251,7 +255,7 @@ public class PatientRandomData {
 		}
 
 		//deceased
-		if (var != null && var.getDeceasedBooleanType() != null && var.getDeceasedBooleanType().getValue() != null) {
+		if (var != null && var.getDeceasedBooleanType() != null  ) {
 			str.append((var.getDeceasedBooleanType().getValue() ? "true" : "false"));
 			str.append(", ");
 		}
