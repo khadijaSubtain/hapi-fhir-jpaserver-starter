@@ -43,7 +43,7 @@ public class AppProperties {
   private Boolean binary_storage_enabled = false;
   private Boolean bulk_export_enabled = false;
   private Boolean default_pretty_print = true;
-  private Integer default_page_size = 20;
+  private Integer default_page_size = Integer.MAX_VALUE;
   private Integer max_binary_size = null;
   private Integer max_page_size = Integer.MAX_VALUE;
   private Integer defer_indexing_for_codesystems_of_size = 100;

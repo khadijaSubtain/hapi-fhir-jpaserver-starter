@@ -1,0 +1,12 @@
+{
+  "resourceType": "Parameters",
+  "parameter": [
+    {
+      "name": "expungeDeletedResources",
+      "valueBoolean": true
+    },{
+      "name": "expungePreviousVersions",
+      "valueBoolean": true
+    }
+  ]
+}
