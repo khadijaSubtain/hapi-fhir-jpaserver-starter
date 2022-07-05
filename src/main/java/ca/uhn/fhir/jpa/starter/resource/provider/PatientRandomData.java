@@ -20,6 +20,7 @@ import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
+import ca.uhn.fhir.jpa.rp.r4.PractitionerResourceProvider;
 
 @Configuration
 public class PatientRandomData {
@@ -31,6 +32,8 @@ public class PatientRandomData {
 	@Autowired
 	OrganizationResourceProvider organizationResourceProvider;
 
+	@Autowired
+	PractitionerResourceProvider practitionerResourceProvider;
 
 	// Create a client
 	FhirContext ctx = FhirContext.forR4();
@@ -185,9 +188,10 @@ public class PatientRandomData {
 		readCount = 0;
 		extractCount = 0;
 		str = new StringBuilder();
-		str.append("COUNT, IDENTIFIER, ACTIVE, NAME, TELECOM, GENDER, BIRTH DATE, DECEASED, ADDRESS, " +
-			"MARITAL STATUS, MULTIPLE BIRTH, EOL\n");
+		str.append( "COUNT, IDENTIFIER, ACTIVE, NAME, TELECOM, GENDER, BIRTH DATE, DECEASED, ADDRESS, " +
+			"MARITAL STATUS, MULTIPLE BIRTH, PRACTITIONER, ORGANIZATION, EOL\n");
 	}
+
 
 	//TRANSFORM
 	private void transformPageToCSV(List<IBaseResource> patientsList) {
@@ -256,7 +260,7 @@ public class PatientRandomData {
 
 		//deceased
 		if (var != null && var.getDeceasedBooleanType() != null  ) {
-			str.append((var.getDeceasedBooleanType().getValue() ? "true" : "false"));
+			//	str.append((var.getDeceasedBooleanType().getValue() ? "true" : "false"));
 			str.append(", ");
 		}
 
@@ -307,6 +311,30 @@ public class PatientRandomData {
 		theServletResponse.getWriter().write("Organization inserted");
 		theServletResponse.getWriter().close();
 	}
+	@Operation(name = "$insertPractitioner", manualResponse = true, manualRequest = true, idempotent = true)
+	public void insertingPractitioner(HttpServletRequest theServletRequest, HttpServletResponse theServletResponse) throws IOException {
+		IFhirResourceDao dao = practitionerResourceProvider.getDao();
+
+		dao.create(createRandomPractitioner());
+
+		theServletResponse.setContentType("text/plain");
+		theServletResponse.getWriter().write("Practitioner inserted");
+		theServletResponse.getWriter().close();
+	}
+
+	@Operation(name = "$retrievingPractitioners", idempotent = true)
+	public Bundle retrievingPractitioners()  {
+		return client
+			.search()
+			.forResource(Practitioner.class)
+			.returnBundle(Bundle.class)
+			.execute();
+	}
+
+	public Practitioner createRandomPractitioner(){
+		Practitioner practitioner = new Practitioner();
+		return  practitioner;
+	}
 
 	@Operation(name = "$retrievingOrganizations", idempotent = true)
 	public Bundle retrievingOrganizations() {
@@ -336,7 +364,7 @@ public class PatientRandomData {
 		//set family
 		//	humanName.setFamily(this.randomStringGenerator());
 
-		humanName.setFamily("Harry");
+		//	humanName.setFamily("Harry");
 
 		//set given
 		List<StringType> givenHumanNameList = new ArrayList<StringType>();
@@ -385,16 +413,17 @@ public class PatientRandomData {
 		//Reference reference = new Reference("http://fhir.hl7.org/svc/StructureDefinition/c8973a22-2b5b-4e76-9c66-00639c99e61b");
 		//reference.setType("http://fhir.hl7.org/svc/StructureDefinition/c8973a22-2b5b-4e76-9c66-00639c99e61b");
 
-		Reference reference = new Reference("GeneralPractitioner/12345");
-		//reference.set("Practitioner");
-
-
+		//Reference reference = new Reference("GeneralPractitioner/12345");
+	//	reference.set("Practitioner");
+		Reference reference = new Reference("Practitioner/52");
 		List<Reference> referenceList = new ArrayList<>();
 		referenceList.add(reference);
 		//patient.setGeneralPractitioner(referenceList);
 		patient.setManagingOrganization(new Reference("Organization/1000102"));
 
-
+		patient.setGeneralPractitioner(referenceList);
+		//Inserting Organization
+		patient.setManagingOrganization(new Reference("Organization/1"));
 		return patient;
 	}
 	//----------------------------------CREATING RANDOM DATA-------------------------------------------------------------
