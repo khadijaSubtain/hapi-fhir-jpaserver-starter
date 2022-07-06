@@ -25,7 +25,7 @@ public class FhirRestClient {
 	private static final String URL_GET_PATIETNT = "http://localhost:8080/fhir/$retrievingBundle";
 
 	private static final String POST_REQUEST = "http://localhost:8080/fhir/";
-	private static final String DIRECTORY_PATH = "/Users/khadijasubtain/Desktop/Synthea data/fhir/";
+	private static final String DIRECTORY_PATH = "/Users/khadijasubtain/Downloads/synthea-master/output/fhir/";
 
 	private static final String EXPUNGING_DATA_URL = "http://localhost:8080/fhir/$expunge";
 	private static final String EXPUNGING_SYSTEM_LEVEL_DATA= "/Users/khadijasubtain/Documents/IntelliJ_workspace/FHIR/hapi-fhir-jpaserver-starter/src/main/resources/requests/expunge_system_level_data.json";
@@ -41,14 +41,14 @@ public class FhirRestClient {
 		FhirRestClient client = new FhirRestClient();
 		 //client.getRequest(URL_GET_PATIETNT);
 		long beforeETLtime = new Date().getTime();
-		client.printResponse(client.getRequest(URL_GET_PATIETNT));
+		//client.printResponse(client.getRequest(URL_GET_PATIETNT));
 		long afterETLtime = new Date().getTime();
 		long seconds = TimeUnit.MILLISECONDS.toSeconds(afterETLtime - beforeETLtime);
 		long milliSeconds = TimeUnit.MILLISECONDS.toMillis(afterETLtime - beforeETLtime);
 		//System.out.println("Extraction and Loading time: MINUTES "+ seconds/60 +" SECONDS: "+ seconds + " MILLISECONDS: "+ milliSeconds);
 		//	System.out.println(client.readFile(FILE_PATH));
 		// client.postRequest(POST_REQUEST, client.readFile(FILE_PATH), true);
-		//client.insertData();
+		client.insertData();
 		//client.expungingData(EXPUNGING_DROP_ALL_DATA);
 
 	}
@@ -60,6 +60,7 @@ public class FhirRestClient {
 
 		for(String str : set){
 			if(str.charAt(0) != '.') {
+				System.out.println("FILE PATH: "+ str);
 				this.postRequest(POST_REQUEST, this.readFile(DIRECTORY_PATH + str), false);
 				System.out.println(insertCount + ": Bundles inserted.");
 			}
