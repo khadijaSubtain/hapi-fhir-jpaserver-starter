@@ -45,6 +45,7 @@ public class PatientRandomData {
 	int readCount = 0;
 	long sizeOfResource = 0;
 
+	//************************************************************************************************************
 	//------------------------------------EXTENDED OPERATIONS-------------------------------------------------------------------
 
 	public static double round(double value, int places) {
@@ -55,18 +56,7 @@ public class PatientRandomData {
 		return bd.doubleValue();
 	}
 
-	@Operation(name = "$retrievingBundle", idempotent = true)
-	public Bundle retrievingBundle() {
-		//resultsPatient.getEntry().get(0);
-		Bundle resultsPatient = client
-			.search()
-			.forResource(Patient.class)
-			.returnBundle(Bundle.class)
-			.execute();
-		System.out.println("SIZE: " + resultsPatient.getEntry().size());
-
-		return resultsPatient;
-	}
+	//------------------------------------INSERTING PATINET-------------------------------------------------------------------
 
 	@Operation(name = "$insertPatient", manualResponse = true, manualRequest = true, idempotent = true)
 	public void insertingPatient(HttpServletRequest theServletRequest, HttpServletResponse theServletResponse) throws IOException {
@@ -93,6 +83,23 @@ public class PatientRandomData {
 		theServletResponse.getWriter().write(i + " patients inserted");
 		theServletResponse.getWriter().close();
 	}
+
+	//------------------------------------RETRIEVING BUNDLE-------------------------------------------------------------------
+
+	@Operation(name = "$retrievingBundle", idempotent = true)
+	public Bundle retrievingBundle() {
+		//resultsPatient.getEntry().get(0);
+		Bundle resultsPatient = client
+			.search()
+			.forResource(Patient.class)
+			.returnBundle(Bundle.class)
+			.execute();
+		System.out.println("SIZE: " + resultsPatient.getEntry().size());
+
+		return resultsPatient;
+	}
+
+	//------------RETRIEVING ALL RANDOM PATIENTS & TRANSFORMING PAGE INTO CSV-------------------------------------------------------------------
 
 	@Operation(name = "$retrievingAllRandomPatients", manualResponse = true, manualRequest = true, idempotent = true)
 	public void bundleDifferentResources(HttpServletRequest theServletRequest, HttpServletResponse theServletResponse) throws IOException {
@@ -165,7 +172,6 @@ public class PatientRandomData {
 				round((totalTransformTime / 1000.0), 2) + " seconds, " + round((totalTransformTime / 60000.0), 2) + " minutes.\r\n");
 
  */
-
 		}
 
 		System.out.println("EXTRACTED TOTAL: " + readCount + " patients in " + round((totalExtractionTime / 1000.0), 2) + " seconds, " + round((totalExtractionTime / 60000.0), 2) + " minutes. ");
@@ -193,12 +199,12 @@ public class PatientRandomData {
 	}
 
 
-	//TRANSFORM
+	//TRANSFORM: takes a page from bundle and transform patient's data into CSV format
 	private void transformPageToCSV(List<IBaseResource> patientsList) {
 		long timeBeforeLoading = new Date().getTime();
 
 		for (IBaseResource var : patientsList) {
-			//EXTRACT
+			//EXTRACT and transform
 			transformPatientToCSV((Patient) var);
 		}
 
@@ -299,7 +305,8 @@ public class PatientRandomData {
 
 	}
 
-	//------------------------------------CREATING PATIENT-------------------------------------------------------------
+
+	//------------------------------------INSERTING ORGANIZATION-------------------------------------------------------------
 
 	@Operation(name = "$insertOrganization", manualResponse = true, manualRequest = true, idempotent = true)
 	public void insertingOrganization(HttpServletRequest theServletRequest, HttpServletResponse theServletResponse) throws IOException {
@@ -311,6 +318,9 @@ public class PatientRandomData {
 		theServletResponse.getWriter().write("Organization inserted");
 		theServletResponse.getWriter().close();
 	}
+
+	//------------------------------------INSERTING PRACTITIONER-------------------------------------------------------------
+
 	@Operation(name = "$insertPractitioner", manualResponse = true, manualRequest = true, idempotent = true)
 	public void insertingPractitioner(HttpServletRequest theServletRequest, HttpServletResponse theServletResponse) throws IOException {
 		IFhirResourceDao dao = practitionerResourceProvider.getDao();
@@ -322,6 +332,13 @@ public class PatientRandomData {
 		theServletResponse.getWriter().close();
 	}
 
+	public Practitioner createRandomPractitioner(){
+		Practitioner practitioner = new Practitioner();
+		return  practitioner;
+	}
+
+	//------------------------------------RETRIEVING PRACTITIONER-------------------------------------------------------------
+
 	@Operation(name = "$retrievingPractitioners", idempotent = true)
 	public Bundle retrievingPractitioners()  {
 		return client
@@ -331,10 +348,9 @@ public class PatientRandomData {
 			.execute();
 	}
 
-	public Practitioner createRandomPractitioner(){
-		Practitioner practitioner = new Practitioner();
-		return  practitioner;
-	}
+
+
+	//------------------------------------RETRIEVING ORGANIZATIONS-------------------------------------------------------------
 
 	@Operation(name = "$retrievingOrganizations", idempotent = true)
 	public Bundle retrievingOrganizations() {
@@ -350,6 +366,8 @@ public class PatientRandomData {
 		return org;
 	}
 
+//------------------------------------CREATING PATIENTS-------------------------------------------------------------
+
 	//Insert Patient to Bundle
 	public Patient createRandomPatient() {
 
@@ -362,21 +380,19 @@ public class PatientRandomData {
 
 		HumanName humanName = new HumanName();
 		//set family
-		//	humanName.setFamily(this.randomStringGenerator());
-
-		//	humanName.setFamily("Harry");
+		humanName.setFamily(this.randomStringGenerator());
 
 		//set given
 		List<StringType> givenHumanNameList = new ArrayList<StringType>();
 		givenHumanNameList.add(new StringType(this.randomStringGenerator()));
 		humanName.setGiven(givenHumanNameList);
 
-		//inserting patient name
+		//inserting patient name with last name and list of first and given names
 		List<HumanName> humanNameList = new ArrayList<HumanName>();
 		humanNameList.add(humanName);
 		patient.setName(humanNameList);
 
-		//Date OF Birth -----------------------------
+		//Date OF Birth
 		patient.setBirthDate(this.dateOfBirth());
 
 		//inserting the address of the patient
@@ -394,11 +410,11 @@ public class PatientRandomData {
 		patient.setMaritalStatus(new CodeableConcept().setTextElement(new StringType(this.randomStringGenerator())));
 
 		//Telecom
-
 		List<ContactPoint> contactPointList = new ArrayList<>();
 		contactPointList.add(new ContactPoint().setValue(this.phoneNumber()));
 		patient.setTelecom(contactPointList);
 
+		//Gender
 		patient.setGender(Enumerations.AdministrativeGender.fromCode(this.generateRandomGender()));
 
 		//multiple birth
@@ -414,27 +430,29 @@ public class PatientRandomData {
 		//reference.setType("http://fhir.hl7.org/svc/StructureDefinition/c8973a22-2b5b-4e76-9c66-00639c99e61b");
 
 		//Reference reference = new Reference("GeneralPractitioner/12345");
-	//	reference.set("Practitioner");
+		//	reference.set("Practitioner");
+
 		Reference reference = new Reference("Practitioner/52");
 		List<Reference> referenceList = new ArrayList<>();
 		referenceList.add(reference);
 		//patient.setGeneralPractitioner(referenceList);
-		patient.setManagingOrganization(new Reference("Organization/1000102"));
-
 		patient.setGeneralPractitioner(referenceList);
+
+		patient.setManagingOrganization(new Reference("Organization/1000102"));
 		//Inserting Organization
 		patient.setManagingOrganization(new Reference("Organization/1"));
 		return patient;
 	}
+
 	//----------------------------------CREATING RANDOM DATA-------------------------------------------------------------
 	/*
+	Main method: FOR TESTING PURPOSE
 	public static void main(String[] args){
 		PatientRandomData pt= new PatientRandomData();
 		System.out.print(pt.dateOfBirth().getYear() +"-" +
 			pt.dateOfBirth().getMonth() + "-"+ pt.dateOfBirth().getDate());
 
 	}
-
 	 */
 
 	//generate random identifier
@@ -442,13 +460,12 @@ public class PatientRandomData {
 		return (this.randomStringGenerator());
 	}
 
-	//martial status
+	//multiple birth
 	public boolean multipleBirth() {
 		return new Random().nextBoolean();
 	}
-	//multiple birth
-	//generate random data for Birthdate
 
+	//generate random data for Birthdate
 	public Date dateOfBirth() {
 
 		GregorianCalendar calander = new GregorianCalendar();
@@ -506,7 +523,7 @@ public class PatientRandomData {
 		}
 		return houseNumber;
 	}
-	//make postal code
+	//make postal code - currently hardcoding the postal code
 
 
 	//generate gender -- curently keeping male and female for synthetic data

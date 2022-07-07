@@ -145,6 +145,7 @@ public class HelloWorldPlainProvider {
 		theServletResponse.getWriter().write(stringBuilder.toString());
 		theServletResponse.getWriter().close();
 	}
+
 		//------------------------------$returningTextWithinResource FOR RANDOMLY GENERATED TEXT---------------------------------------------------------------------------------
 	@Operation(name = "$returningTextWithinResource", idempotent = true)
 	public CustomResource stringsOfDynamicLength() throws IOException {
