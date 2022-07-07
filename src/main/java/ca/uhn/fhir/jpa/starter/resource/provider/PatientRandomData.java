@@ -219,8 +219,9 @@ public class PatientRandomData {
 	}
 
 	private void transformPatientToCSV(Patient var) {
+		// var cannot be null because its a patient resource
 		str.append(++extractCount);
-		str.append(", ");
+		str.append(",");
 
 		//identifier
 		if (var.getIdentifier() != null && var.getIdentifier().size() > 0) {
@@ -231,73 +232,75 @@ public class PatientRandomData {
 		//active
 		if (var != null) {
 			str.append(var.getActive() ? "true" : "false");
-			str.append(",");
 		}
+		str.append(",");
 
 		//family name
 		if (var != null && var.getName().size() > 0 && var.getName().get(0).getFamily() != null) {
 			str.append(var.getName().get(0).getFamily());
-			str.append(" - ");
+			str.append("-");
 		}
 		//givenName
 		if (var != null && var.getName().size() > 0 && var.getName().get(0).getGiven() != null) {
 			str.append(var.getName().get(0).getGiven().get(0).getValue());
-			str.append(", ");
+			str.append(",");
 		}
 
 		//telecom
 		if (var != null && var.getTelecom().size() > 0 && var.getTelecom() != null) {
 			str.append(var.getTelecom().get(0).getValue());
-			str.append(", ");
 		}
+		str.append(",");
 
 		//Gender
 		if (var != null && var.getGender() != null) {
 			str.append(var.getGender().toCode());
-			str.append(", ");
 		}
+		str.append(",");
 
 		//Date of Birth
 		if (var != null && var.getBirthDate() != null) {
 			str.append(var.getBirthDate().getYear() + "-" + var.getBirthDate().getMonth() +
 				"-" + var.getBirthDate().getDate());
-			str.append(", ");
 		}
+		str.append(",");
 
 		//deceased
 		if (var != null && var.getDeceasedBooleanType() != null  ) {
 			//	str.append((var.getDeceasedBooleanType().getValue() ? "true" : "false"));
-			str.append(", ");
 		}
+		str.append(",");
 
 		//address
 		if (var != null && var.getAddress().size() > 0 && var.getAddress() != null) {
 			str.append(var.getAddress().get(0).getLine().get(0).getValue());
-			str.append(", ");
 		}
+		str.append(",");
 
 		//married
 		if (var != null && var.getMaritalStatus() != null) {
 			str.append(var.getMaritalStatus().getTextElement());
-			str.append(", ");
 		}
+		str.append(",");
 
 		//multipleBirth
 		if (var != null && var.getMultipleBirthBooleanType() != null) {
 			str.append((var.getMultipleBirthBooleanType().getValue() ? "true" : "false"));
-			str.append(", ");
 		}
+		str.append(",");
 
 		//practitioner family name
 		if (var != null && var.getGeneralPractitioner().size() > 0 && var.getGeneralPractitioner() != null) {
 			str.append(var.getGeneralPractitioner().get(0).getReference());
-			str.append(", ");
 		}
+		str.append(",");
+
 		//Observation
 		if (var != null && var.getManagingOrganization() != null) {
 			str.append(var.getManagingOrganization().getReference());
-			str.append(", ");
 		}
+		str.append(",");
+		
 		//end of line
 		str.append(" -1 ");
 		str.append("\n ");
