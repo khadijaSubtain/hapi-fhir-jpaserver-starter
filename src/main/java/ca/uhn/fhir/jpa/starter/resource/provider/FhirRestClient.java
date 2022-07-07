@@ -8,6 +8,9 @@ import org.apache.http.entity.StringEntity;
 import org.apache.http.impl.client.HttpClientBuilder;
 
 import java.io.*;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.Date;
 import java.util.Scanner;
 import java.util.Set;
@@ -26,6 +29,7 @@ public class FhirRestClient {
 
 	private static final String POST_REQUEST = "http://localhost:8080/fhir/";
 	private static final String DIRECTORY_PATH = "/Users/khadijasubtain/Downloads/synthea-master/output/fhir/";
+	//private static final String DESTINATION_PATH = "Users/khadijasubtain/Downloads/synthea-master/output/fhir/insertedFiles/";
 
 	private static final String EXPUNGING_DATA_URL = "http://localhost:8080/fhir/$expunge";
 	private static final String EXPUNGING_SYSTEM_LEVEL_DATA= "/Users/khadijasubtain/Documents/IntelliJ_workspace/FHIR/hapi-fhir-jpaserver-starter/src/main/resources/requests/expunge_system_level_data.json";
@@ -39,21 +43,27 @@ public class FhirRestClient {
 
 	public static void main(String[] args) {
 		FhirRestClient client = new FhirRestClient();
-		 //client.getRequest(URL_GET_PATIETNT);
+
+		//client.getRequest(URL_GET_PATIETNT);
+
 		long beforeETLtime = new Date().getTime();
 		//client.printResponse(client.getRequest(URL_GET_PATIETNT));
 		long afterETLtime = new Date().getTime();
 		long seconds = TimeUnit.MILLISECONDS.toSeconds(afterETLtime - beforeETLtime);
 		long milliSeconds = TimeUnit.MILLISECONDS.toMillis(afterETLtime - beforeETLtime);
 		//System.out.println("Extraction and Loading time: MINUTES "+ seconds/60 +" SECONDS: "+ seconds + " MILLISECONDS: "+ milliSeconds);
+
 		//	System.out.println(client.readFile(FILE_PATH));
+
 		// client.postRequest(POST_REQUEST, client.readFile(FILE_PATH), true);
+
 		client.insertData();
+
 		//client.expungingData(EXPUNGING_DROP_ALL_DATA);
 
 	}
 	//---------------------------------------INSERT ALL DATA-----------------------------------------
-	public void insertData(){
+	public void insertData()  {
 		insertCount = 0;
 		Set<String> set = this.listFilesUsingJavaIO(DIRECTORY_PATH);
 		long timeBeforeInserting = new Date().getTime();
@@ -62,6 +72,7 @@ public class FhirRestClient {
 			if(str.charAt(0) != '.') {
 				System.out.println("FILE PATH: "+ str);
 				this.postRequest(POST_REQUEST, this.readFile(DIRECTORY_PATH + str), false);
+			 //	moveFile(DIRECTORY_PATH + str , DESTINATION_PATH);
 				System.out.println(insertCount + ": Bundles inserted.");
 			}
 		}
@@ -73,7 +84,26 @@ public class FhirRestClient {
 		System.out.println("INSERTING TIME: "+ insertCount +" inserts is " + (seconds / 60) +" MINUTES, "+ seconds + " SECONDS, and " + milliSeconds + " MILLISECONDS.");
 	}
 
+	//-----------------------------------------MOVE FILE----------------------------------------
+
+/*
+	private static void moveFile(String src, String dest ) {
+		Path result = null;
+		try {
+			result = Files.move(Paths.get(src), Paths.get(dest));
+		} catch (IOException e) {
+			System.out.println("Exception while moving file: " + e.getMessage());
+		}
+		if(result != null) {
+			System.out.println("File moved successfully.");
+		}else{
+			System.out.println("File movement failed.");
+		}
+	}
+*/
+
 	//---------------------------------------GET REQUEST-------------------------------------------------
+
 	public HttpResponse getRequest(String urlString) {
 		HttpResponse response = null;
 		try {
@@ -97,7 +127,6 @@ public class FhirRestClient {
 			if (response.getStatusLine().getStatusCode() != 200) {
 				throw new RuntimeException("Failed : HTTP error code : " + response.getStatusLine().getStatusCode());
 			}
-
 		} catch (
 			ClientProtocolException e) {
 			e.printStackTrace();
@@ -109,6 +138,7 @@ public class FhirRestClient {
 	}
 
 	//-----------------------------------------PRINT RESPONSE----------------------------------------
+
 	public void printResponse(HttpResponse response) {
 		try {
 			//reading from a response
@@ -124,6 +154,7 @@ public class FhirRestClient {
 		}
 	}
 
+//-----------------------------------------POST REQUEST----------------------------------------
 	/**
 	 *
 	 * @param urlString
@@ -154,7 +185,7 @@ public class FhirRestClient {
 				throw new RuntimeException("Failed : HTTP error code : " + response.getStatusLine().getStatusCode());
 			} else {
 				if(printResponse == true) {
-					printResponse(response);
+						printResponse(response);
 				}
 				insertCount++;
 			}
@@ -166,6 +197,8 @@ public class FhirRestClient {
 			e.printStackTrace();
 		}
 	}
+
+//-----------------------------------------READ FILE----------------------------------------
 
 	public String readFile(String filePath) {
 		StringBuilder stringBuilder = new StringBuilder();
@@ -184,12 +217,16 @@ public class FhirRestClient {
 		return stringBuilder.toString();
 	}
 
+//-----------------------------------------LIST OF FILES----------------------------------------
+
 	public Set<String> listFilesUsingJavaIO(String dir) {
 		return Stream.of(new File(dir).listFiles())
 			.filter(file -> !file.isDirectory())
 			.map(File::getName)
 			.collect(Collectors.toSet());
 	}
+
+//-----------------------------------------EXPUNGING DATA----------------------------------------
 
 	public void expungingData(String requestPath){
 			this.postRequest(EXPUNGING_DATA_URL, this.readFile(requestPath), true);
