@@ -23,6 +23,7 @@ import ca.uhn.fhir.jpa.provider.SubscriptionTriggeringProvider;
 import ca.uhn.fhir.jpa.provider.TerminologyUploaderProvider;
 import ca.uhn.fhir.jpa.provider.dstu3.JpaConformanceProviderDstu3;
 import ca.uhn.fhir.jpa.provider.ValueSetOperationProvider;
+import ca.uhn.fhir.jpa.rp.r4.PatientResourceProvider;
 import ca.uhn.fhir.jpa.search.DatabaseBackedPagingProvider;
 import ca.uhn.fhir.jpa.starter.resource.provider.HelloWorldPlainProvider;
 import ca.uhn.fhir.jpa.starter.resource.provider.MdClonePlainProvider;
@@ -161,6 +162,7 @@ public class BaseJpaRestfulServer extends RestfulServer {
     registerProvider(mdClonePlainProvider); // registering mdClonePlainProvider after creating a bean
 	 registerProvider(helloWorldPlainProvider); // registering HelloWorldPlainProvider without creating a bean and by creating a POJO
 	  registerProvider(patientRandomData);
+	 // registerProvider(PractitionerPlainProvider);
 	  /*
      * The conformance provider exports the supported resources, search parameters, etc for
      * this server. The JPA version adds resourceProviders counts to the exported statement, so it

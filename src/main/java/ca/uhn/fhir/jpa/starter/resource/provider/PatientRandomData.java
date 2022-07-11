@@ -243,8 +243,9 @@ public class PatientRandomData {
 		//givenName
 		if (var != null && var.getName().size() > 0 && var.getName().get(0).getGiven() != null) {
 			str.append(var.getName().get(0).getGiven().get(0).getValue());
-			str.append(",");
+
 		}
+		str.append(",");
 
 		//telecom
 		if (var != null && var.getTelecom().size() > 0 && var.getTelecom() != null) {
@@ -300,7 +301,7 @@ public class PatientRandomData {
 			str.append(var.getManagingOrganization().getReference());
 		}
 		str.append(",");
-		
+
 		//end of line
 		str.append(" -1 ");
 		str.append("\n ");

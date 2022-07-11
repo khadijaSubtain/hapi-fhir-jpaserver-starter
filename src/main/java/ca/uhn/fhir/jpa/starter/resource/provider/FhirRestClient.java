@@ -6,6 +6,7 @@ import org.apache.http.client.methods.HttpGet;
 import org.apache.http.client.methods.HttpPost;
 import org.apache.http.entity.StringEntity;
 import org.apache.http.impl.client.HttpClientBuilder;
+import org.apache.http.protocol.HTTP;
 
 import java.io.*;
 import java.nio.file.Files;
@@ -28,22 +29,25 @@ public class FhirRestClient {
 	private static final String URL_GET_PATIETNT = "http://localhost:8080/fhir/$retrievingBundle";
 
 	private static final String POST_REQUEST = "http://localhost:8080/fhir/";
-	private static final String DIRECTORY_PATH = "/Users/khadijasubtain/Downloads/synthea-master/output/fhir/";
-	//private static final String DESTINATION_PATH = "Users/khadijasubtain/Downloads/synthea-master/output/fhir/insertedFiles/";
+	///Users/khadijasubtain/Downloads/synthea-master/output/fhir/externalResources/
+	private static String DIRECTORY_PATH = "/Users/khadijasubtain/Downloads/synthea-master/output/fhir/";
+	private static String FILE_NAME = "";
+
+	private static String DESTINATION_PATH_CORRECT_FILES = "/Users/khadijasubtain/Downloads/synthea-master/output/fhir/insertedFiles/";
+	private static String DESTINATION_PATH_ERROR_FILES = "/Users/khadijasubtain/Downloads/synthea-master/output/fhir/failedFiles/";
 
 	private static final String EXPUNGING_DATA_URL = "http://localhost:8080/fhir/$expunge";
 	private static final String EXPUNGING_SYSTEM_LEVEL_DATA= "/Users/khadijasubtain/Documents/IntelliJ_workspace/FHIR/hapi-fhir-jpaserver-starter/src/main/resources/requests/expunge_system_level_data.json";
 	private static final String EXPUNGING_DROP_ALL_DATA="/Users/khadijasubtain/Documents/IntelliJ_workspace/FHIR/hapi-fhir-jpaserver-starter/src/main/resources/requests/expunge_drop_all_data.json";
 	private static final String EXPUNGING_TYPE_LEVEL_DATA="/Users/khadijasubtain/Documents/IntelliJ_workspace/FHIR/hapi-fhir-jpaserver-starter/src/main/resources/requests/expunge_type_level_data.json";
 	private static final String EXPUNGING_INSTANCE_LEVEL_DATA="/Users/khadijasubtain/Documents/IntelliJ_workspace/FHIR/hapi-fhir-jpaserver-starter/src/main/resources/requests/expunge_instance_level_data.json";
-
+	private static String ERROR_FILE_PATH= "/Users/khadijasubtain/Downloads/synthea-master/output/fhir/errors.txt";
 	public int insertCount = 0;
 
 	//-------------------------------------Main method---------------------------------------------
 
 	public static void main(String[] args) {
 		FhirRestClient client = new FhirRestClient();
-
 		//client.getRequest(URL_GET_PATIETNT);
 
 		long beforeETLtime = new Date().getTime();
@@ -57,9 +61,9 @@ public class FhirRestClient {
 
 		// client.postRequest(POST_REQUEST, client.readFile(FILE_PATH), true);
 
-		client.insertData();
+	   	client.insertData();
 
-		//client.expungingData(EXPUNGING_DROP_ALL_DATA);
+	//	client.expungingData(EXPUNGING_DROP_ALL_DATA);
 
 	}
 	//---------------------------------------INSERT ALL DATA-----------------------------------------
@@ -69,10 +73,11 @@ public class FhirRestClient {
 		long timeBeforeInserting = new Date().getTime();
 
 		for(String str : set){
-			if(str.charAt(0) != '.') {
+			if(str.charAt(0) != '.' && !str.contains("errors")) {
 				System.out.println("FILE PATH: "+ str);
+				FILE_NAME = str;
 				this.postRequest(POST_REQUEST, this.readFile(DIRECTORY_PATH + str), false);
-			 //	moveFile(DIRECTORY_PATH + str , DESTINATION_PATH);
+			 	moveFile((DIRECTORY_PATH + FILE_NAME ) , DESTINATION_PATH_CORRECT_FILES + FILE_NAME );
 				System.out.println(insertCount + ": Bundles inserted.");
 			}
 		}
@@ -86,7 +91,7 @@ public class FhirRestClient {
 
 	//-----------------------------------------MOVE FILE----------------------------------------
 
-/*
+
 	private static void moveFile(String src, String dest ) {
 		Path result = null;
 		try {
@@ -100,7 +105,7 @@ public class FhirRestClient {
 			System.out.println("File movement failed.");
 		}
 	}
-*/
+
 
 	//---------------------------------------GET REQUEST-------------------------------------------------
 
@@ -139,19 +144,22 @@ public class FhirRestClient {
 
 	//-----------------------------------------PRINT RESPONSE----------------------------------------
 
-	public void printResponse(HttpResponse response) {
+	public String printResponse(HttpResponse response) {
+		StringBuilder str = new StringBuilder();
 		try {
 			//reading from a response
 			BufferedReader br = new BufferedReader(new InputStreamReader((response.getEntity().getContent())));
-			String output;
+			String output="";
 
 			// Simply iterate through XML response and show on console.
 			while ((output = br.readLine()) != null) {
-				System.out.println(output);
+			//	System.out.println(output);
+				str.append(output);
 			}
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
+			return str.toString();
 	}
 
 //-----------------------------------------POST REQUEST----------------------------------------
@@ -174,21 +182,13 @@ public class FhirRestClient {
 			StringEntity input = new StringEntity(jsonFilePath);
 			post.setEntity(input);
 			HttpResponse response = httpClient.execute(post);
-			BufferedReader rd = new BufferedReader(new InputStreamReader(response.getEntity().getContent()));
-			String line = " ";
-
-			while ((line = rd.readLine()) != null) {
-				System.out.println(line);
-			}
+			String responseText = printResponse(response);
 
 			if (response.getStatusLine().getStatusCode() != 200) {
-				throw new RuntimeException("Failed : HTTP error code : " + response.getStatusLine().getStatusCode());
-			} else {
-				if(printResponse == true) {
-						printResponse(response);
+				moveFile((DIRECTORY_PATH + FILE_NAME), DESTINATION_PATH_ERROR_FILES + FILE_NAME);
+				logErrors(responseText);
 				}
 				insertCount++;
-			}
 		} catch (
 			ClientProtocolException e) {
 			e.printStackTrace();
@@ -197,7 +197,24 @@ public class FhirRestClient {
 			e.printStackTrace();
 		}
 	}
-
+//-----------------------------------------ERROR LOG----------------------------------------
+	public void logErrors(String responseText){
+		FileWriter fWriter = null;
+		try {
+			fWriter = new FileWriter(ERROR_FILE_PATH, true);
+			fWriter.write(FILE_NAME);
+			fWriter.write(String.format("														"));
+			fWriter.write(String.format("---------------------------------------"));
+			fWriter.write(String.format("														"));
+			fWriter.write(responseText);
+			fWriter.write(String.format("                               			                               			"));
+			fWriter.write(String.format("***************************************"));
+			fWriter.write(String.format("                                                    			          			"));
+			fWriter.close();
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+	}
 //-----------------------------------------READ FILE----------------------------------------
 
 	public String readFile(String filePath) {
