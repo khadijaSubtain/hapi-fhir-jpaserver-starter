@@ -1,4 +1,5 @@
 package ca.uhn.fhir.jpa.starter.resource.provider;
+
 import org.apache.http.HttpResponse;
 import org.apache.http.client.ClientProtocolException;
 import org.apache.http.client.HttpClient;
@@ -29,19 +30,17 @@ public class FhirRestClient {
 	private static final String URL_GET_PATIETNT = "http://localhost:8080/fhir/$retrievingBundle";
 
 	private static final String POST_REQUEST = "http://localhost:8080/fhir/";
+	private static final String EXPUNGING_DATA_URL = "http://localhost:8080/fhir/$expunge";
+	private static final String EXPUNGING_SYSTEM_LEVEL_DATA = "/Users/khadijasubtain/Documents/IntelliJ_workspace/FHIR/hapi-fhir-jpaserver-starter/src/main/resources/requests/expunge_system_level_data.json";
+	private static final String EXPUNGING_DROP_ALL_DATA = "/Users/khadijasubtain/Documents/IntelliJ_workspace/FHIR/hapi-fhir-jpaserver-starter/src/main/resources/requests/expunge_drop_all_data.json";
+	private static final String EXPUNGING_TYPE_LEVEL_DATA = "/Users/khadijasubtain/Documents/IntelliJ_workspace/FHIR/hapi-fhir-jpaserver-starter/src/main/resources/requests/expunge_type_level_data.json";
+	private static final String EXPUNGING_INSTANCE_LEVEL_DATA = "/Users/khadijasubtain/Documents/IntelliJ_workspace/FHIR/hapi-fhir-jpaserver-starter/src/main/resources/requests/expunge_instance_level_data.json";
 	///Users/khadijasubtain/Downloads/synthea-master/output/fhir/externalResources/
 	private static String DIRECTORY_PATH = "/Users/khadijasubtain/Downloads/synthea-master/output/fhir/";
 	private static String FILE_NAME = "";
-
 	private static String DESTINATION_PATH_CORRECT_FILES = "/Users/khadijasubtain/Downloads/synthea-master/output/fhir/insertedFiles/";
 	private static String DESTINATION_PATH_ERROR_FILES = "/Users/khadijasubtain/Downloads/synthea-master/output/fhir/failedFiles/";
-
-	private static final String EXPUNGING_DATA_URL = "http://localhost:8080/fhir/$expunge";
-	private static final String EXPUNGING_SYSTEM_LEVEL_DATA= "/Users/khadijasubtain/Documents/IntelliJ_workspace/FHIR/hapi-fhir-jpaserver-starter/src/main/resources/requests/expunge_system_level_data.json";
-	private static final String EXPUNGING_DROP_ALL_DATA="/Users/khadijasubtain/Documents/IntelliJ_workspace/FHIR/hapi-fhir-jpaserver-starter/src/main/resources/requests/expunge_drop_all_data.json";
-	private static final String EXPUNGING_TYPE_LEVEL_DATA="/Users/khadijasubtain/Documents/IntelliJ_workspace/FHIR/hapi-fhir-jpaserver-starter/src/main/resources/requests/expunge_type_level_data.json";
-	private static final String EXPUNGING_INSTANCE_LEVEL_DATA="/Users/khadijasubtain/Documents/IntelliJ_workspace/FHIR/hapi-fhir-jpaserver-starter/src/main/resources/requests/expunge_instance_level_data.json";
-	private static String ERROR_FILE_PATH= "/Users/khadijasubtain/Downloads/synthea-master/output/fhir/errors.txt";
+	private static String ERROR_FILE_PATH = "/Users/khadijasubtain/Downloads/synthea-master/output/fhir/errors.txt";
 	public int insertCount = 0;
 
 	//-------------------------------------Main method---------------------------------------------
@@ -61,23 +60,40 @@ public class FhirRestClient {
 
 		// client.postRequest(POST_REQUEST, client.readFile(FILE_PATH), true);
 
-	   	client.insertData();
+		client.insertData();
 
-	//	client.expungingData(EXPUNGING_DROP_ALL_DATA);
+		//	client.expungingData(EXPUNGING_DROP_ALL_DATA);
 
 	}
+
+	private static void moveFile(String src, String dest) {
+		Path result = null;
+		try {
+			result = Files.move(Paths.get(src), Paths.get(dest));
+		} catch (IOException e) {
+			System.out.println("Exception while moving file: " + e.getMessage());
+		}
+		if (result != null) {
+			System.out.println("File moved successfully.");
+		} else {
+			System.out.println("File movement failed.");
+		}
+	}
+
+	//-----------------------------------------MOVE FILE----------------------------------------
+
 	//---------------------------------------INSERT ALL DATA-----------------------------------------
-	public void insertData()  {
+	public void insertData() {
 		insertCount = 0;
 		Set<String> set = this.listFilesUsingJavaIO(DIRECTORY_PATH);
 		long timeBeforeInserting = new Date().getTime();
 
-		for(String str : set){
-			if(str.charAt(0) != '.' && !str.contains("errors")) {
-				System.out.println("FILE PATH: "+ str);
+		for (String str : set) {
+			if (str.charAt(0) != '.' && !str.contains("errors")) {
+				System.out.println("FILE PATH: " + str);
 				FILE_NAME = str;
 				this.postRequest(POST_REQUEST, this.readFile(DIRECTORY_PATH + str), false);
-			 	moveFile((DIRECTORY_PATH + FILE_NAME ) , DESTINATION_PATH_CORRECT_FILES + FILE_NAME );
+				moveFile((DIRECTORY_PATH + FILE_NAME), DESTINATION_PATH_CORRECT_FILES + FILE_NAME);
 				System.out.println(insertCount + ": Bundles inserted.");
 			}
 		}
@@ -86,24 +102,7 @@ public class FhirRestClient {
 		long seconds = TimeUnit.MILLISECONDS.toSeconds(timeAfterInserting - timeBeforeInserting);
 		long milliSeconds = TimeUnit.MILLISECONDS.toMillis(timeAfterInserting - timeBeforeInserting);
 
-		System.out.println("INSERTING TIME: "+ insertCount +" inserts is " + (seconds / 60) +" MINUTES, "+ seconds + " SECONDS, and " + milliSeconds + " MILLISECONDS.");
-	}
-
-	//-----------------------------------------MOVE FILE----------------------------------------
-
-
-	private static void moveFile(String src, String dest ) {
-		Path result = null;
-		try {
-			result = Files.move(Paths.get(src), Paths.get(dest));
-		} catch (IOException e) {
-			System.out.println("Exception while moving file: " + e.getMessage());
-		}
-		if(result != null) {
-			System.out.println("File moved successfully.");
-		}else{
-			System.out.println("File movement failed.");
-		}
+		System.out.println("INSERTING TIME: " + insertCount + " inserts is " + (seconds / 60) + " MINUTES, " + seconds + " SECONDS, and " + milliSeconds + " MILLISECONDS.");
 	}
 
 
@@ -149,22 +148,22 @@ public class FhirRestClient {
 		try {
 			//reading from a response
 			BufferedReader br = new BufferedReader(new InputStreamReader((response.getEntity().getContent())));
-			String output="";
+			String output = "";
 
 			// Simply iterate through XML response and show on console.
 			while ((output = br.readLine()) != null) {
-			//	System.out.println(output);
+				//	System.out.println(output);
 				str.append(output);
 			}
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
-			return str.toString();
+		return str.toString();
 	}
 
 //-----------------------------------------POST REQUEST----------------------------------------
+
 	/**
-	 *
 	 * @param urlString
 	 * @param jsonFilePath that contains the path to our json file from synthea
 	 */
@@ -187,8 +186,8 @@ public class FhirRestClient {
 			if (response.getStatusLine().getStatusCode() != 200) {
 				moveFile((DIRECTORY_PATH + FILE_NAME), DESTINATION_PATH_ERROR_FILES + FILE_NAME);
 				logErrors(responseText);
-				}
-				insertCount++;
+			}
+			insertCount++;
 		} catch (
 			ClientProtocolException e) {
 			e.printStackTrace();
@@ -197,8 +196,9 @@ public class FhirRestClient {
 			e.printStackTrace();
 		}
 	}
-//-----------------------------------------ERROR LOG----------------------------------------
-	public void logErrors(String responseText){
+
+	//-----------------------------------------ERROR LOG----------------------------------------
+	public void logErrors(String responseText) {
 		FileWriter fWriter = null;
 		try {
 			fWriter = new FileWriter(ERROR_FILE_PATH, true);
@@ -245,8 +245,8 @@ public class FhirRestClient {
 
 //-----------------------------------------EXPUNGING DATA----------------------------------------
 
-	public void expungingData(String requestPath){
-			this.postRequest(EXPUNGING_DATA_URL, this.readFile(requestPath), true);
+	public void expungingData(String requestPath) {
+		this.postRequest(EXPUNGING_DATA_URL, this.readFile(requestPath), true);
 	}
 }
 

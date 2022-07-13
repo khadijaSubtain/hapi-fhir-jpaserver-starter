@@ -20,6 +20,7 @@ import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
+
 import ca.uhn.fhir.jpa.rp.r4.PractitionerResourceProvider;
 
 @Configuration
@@ -194,7 +195,7 @@ public class PatientRandomData {
 		readCount = 0;
 		extractCount = 0;
 		str = new StringBuilder();
-		str.append( "COUNT, IDENTIFIER, ACTIVE, NAME, TELECOM, GENDER, BIRTH DATE, DECEASED, ADDRESS, " +
+		str.append("COUNT, IDENTIFIER, ACTIVE, NAME, TELECOM, GENDER, BIRTH DATE, DECEASED, ADDRESS, " +
 			"MARITAL STATUS, MULTIPLE BIRTH, PRACTITIONER, ORGANIZATION, EOL\n");
 	}
 
@@ -267,13 +268,13 @@ public class PatientRandomData {
 		str.append(",");
 
 		//deceased
-		if (var != null && var.getDeceasedBooleanType() != null  ) {
+		if (var != null && var.getDeceasedBooleanType() != null) {
 			//	str.append((var.getDeceasedBooleanType().getValue() ? "true" : "false"));
 		}
 		str.append(",");
 
 		//address
-		if (var != null && var.getAddress().size() > 0 && var.getAddress() != null) {
+		if (var.getAddress().size() > 0 && var.getAddress() != null) {
 			str.append(var.getAddress().get(0).getLine().get(0).getValue());
 		}
 		str.append(",");
@@ -336,22 +337,21 @@ public class PatientRandomData {
 		theServletResponse.getWriter().close();
 	}
 
-	public Practitioner createRandomPractitioner(){
+	public Practitioner createRandomPractitioner() {
 		Practitioner practitioner = new Practitioner();
-		return  practitioner;
+		return practitioner;
 	}
 
 	//------------------------------------RETRIEVING PRACTITIONER-------------------------------------------------------------
 
 	@Operation(name = "$retrievingPractitioners", idempotent = true)
-	public Bundle retrievingPractitioners()  {
+	public Bundle retrievingPractitioners() {
 		return client
 			.search()
 			.forResource(Practitioner.class)
 			.returnBundle(Bundle.class)
 			.execute();
 	}
-
 
 
 	//------------------------------------RETRIEVING ORGANIZATIONS-------------------------------------------------------------
