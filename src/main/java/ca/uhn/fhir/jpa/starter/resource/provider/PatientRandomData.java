@@ -183,7 +183,7 @@ public class PatientRandomData {
 		//System.out.println("Total Resources size created " +  (sizeOfResource * readCount)/1000000 + "MB");
 
 		System.out.println("Loaded " + readCount + " patients!");
-		theServletResponse.setContentType("text/plain");
+		theServletResponse.setContentType("text/csv");
 		theServletResponse.getWriter().write(str.toString());
 		theServletResponse.getWriter().close();
 	}
@@ -195,8 +195,8 @@ public class PatientRandomData {
 		readCount = 0;
 		extractCount = 0;
 		str = new StringBuilder();
-		str.append("COUNT, IDENTIFIER, ACTIVE, NAME, TELECOM, GENDER, BIRTH DATE, DECEASED, ADDRESS, " +
-			"MARITAL STATUS, MULTIPLE BIRTH, PRACTITIONER, ORGANIZATION, EOL\n");
+		//str.append("COUNT, IDENTIFIER, ACTIVE, NAME, TELECOM, GENDER, BIRTH DATE, DECEASED, ADDRESS, " +
+			//"MARITAL STATUS, MULTIPLE BIRTH, PRACTITIONER, ORGANIZATION, EOL\n");
 	}
 
 
@@ -206,7 +206,9 @@ public class PatientRandomData {
 
 		for (IBaseResource var : patientsList) {
 			//EXTRACT and transform
-			transformPatientToCSV((Patient) var);
+			//transformPatientToCSV((Patient) var);
+			str.append(PatientTranslatorService.createPatientCsvHeaderRow());
+			str.append(PatientTranslatorService.transformPatientToCSV((Patient) var));
 		}
 
 		long timeAfterLoading = new Date().getTime();
