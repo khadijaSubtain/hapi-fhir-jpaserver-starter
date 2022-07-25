@@ -29,7 +29,8 @@ public class FhirRestClient {
 	 */
 	private static final String URL_GET_PATIETNT = "http://localhost:8080/fhir/$retrievingBundle";
 
-	private static final String POST_REQUEST = "http://localhost:8080/fhir/";
+	private static final String POST_REQUEST = "http://192.168.2.41:8080/fhir";
+	//"http://localhost:8080/fhir/";
 	private static final String EXPUNGING_DATA_URL = "http://localhost:8080/fhir/$expunge";
 	private static final String EXPUNGING_SYSTEM_LEVEL_DATA = "/Users/khadijasubtain/Documents/IntelliJ_workspace/FHIR/hapi-fhir-jpaserver-starter/src/main/resources/requests/expunge_system_level_data.json";
 	private static final String EXPUNGING_DROP_ALL_DATA = "/Users/khadijasubtain/Documents/IntelliJ_workspace/FHIR/hapi-fhir-jpaserver-starter/src/main/resources/requests/expunge_drop_all_data.json";
@@ -66,22 +67,6 @@ public class FhirRestClient {
 
 	}
 
-	private static void moveFile(String src, String dest) {
-		Path result = null;
-		try {
-			result = Files.move(Paths.get(src), Paths.get(dest));
-		} catch (IOException e) {
-			System.out.println("Exception while moving file: " + e.getMessage());
-		}
-		if (result != null) {
-			System.out.println("File moved successfully.");
-		} else {
-			System.out.println("File movement failed.");
-		}
-	}
-
-	//-----------------------------------------MOVE FILE----------------------------------------
-
 	//---------------------------------------INSERT ALL DATA-----------------------------------------
 	public void insertData() {
 		insertCount = 0;
@@ -105,6 +90,23 @@ public class FhirRestClient {
 		System.out.println("INSERTING TIME: " + insertCount + " inserts is " + (seconds / 60) + " MINUTES, " + seconds + " SECONDS, and " + milliSeconds + " MILLISECONDS.");
 	}
 
+	//-----------------------------------------MOVE FILE----------------------------------------
+	private static void moveFile(String src, String dest) {
+		Path result = null;
+		try {
+			result = Files.move(Paths.get(src), Paths.get(dest));
+		} catch (IOException e) {
+			System.out.println("Exception while moving file: " + e.getMessage());
+		}
+		if (result != null) {
+			System.out.println("File moved successfully.");
+		} else {
+			System.out.println("File movement failed.");
+		}
+	}
+
+
+
 
 	//---------------------------------------GET REQUEST-------------------------------------------------
 
@@ -118,7 +120,7 @@ public class FhirRestClient {
 			// Create new getRequest with below mentioned URL
 			HttpGet getRequest = new HttpGet(urlString);
 
-			// Add additional header to getRequest which accepts application/xml data
+			// Add additional header to getRequest which accepts (application/xml/json/txt any kind of data) data
 			getRequest.addHeader("Accept", "*/*");
 			//Accept-Encoding header
 			getRequest.addHeader("Accept-Encoding", "gzip, deflate, br");
@@ -150,7 +152,7 @@ public class FhirRestClient {
 			BufferedReader br = new BufferedReader(new InputStreamReader((response.getEntity().getContent())));
 			String output = "";
 
-			// Simply iterate through XML response and show on console.
+			// Simply iterate through json response and show on either console or return it.
 			while ((output = br.readLine()) != null) {
 				//	System.out.println(output);
 				str.append(output);

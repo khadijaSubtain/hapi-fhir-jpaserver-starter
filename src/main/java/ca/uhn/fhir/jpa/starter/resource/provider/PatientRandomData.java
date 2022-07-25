@@ -16,6 +16,7 @@ import org.springframework.context.annotation.Configuration;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
+import java.lang.reflect.Field;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.util.*;
@@ -47,7 +48,7 @@ public class PatientRandomData {
 	long sizeOfResource = 0;
 
 	//************************************************************************************************************
-	//------------------------------------EXTENDED OPERATIONS-------------------------------------------------------------------
+	//------------------------------------EXTENDED OPERATIONS------------------------------------------------------
 
 	public static double round(double value, int places) {
 		if (places < 0) throw new IllegalArgumentException();
@@ -221,8 +222,9 @@ public class PatientRandomData {
 		//seconds + " seconds, " + round((seconds / 60.0), 2) + " minutes. \r\n");
 	}
 
-	private void transformPatientToCSV(Patient var) {
+	private void transformPatientToCSV(Patient var)  {
 		// var cannot be null because its a patient resource
+
 		str.append(++extractCount);
 		str.append(",");
 
@@ -235,12 +237,14 @@ public class PatientRandomData {
 		//active
 		if (var != null) {
 			str.append(var.getActive() ? "true" : "false");
+
 		}
 		str.append(",");
 
 		//family name
 		if (var != null && var.getName().size() > 0 && var.getName().get(0).getFamily() != null) {
 			str.append(var.getName().get(0).getFamily());
+		//	var.getName().get(0).getFamily().str
 			str.append("-");
 		}
 		//givenName
@@ -438,15 +442,15 @@ public class PatientRandomData {
 		//Reference reference = new Reference("GeneralPractitioner/12345");
 		//	reference.set("Practitioner");
 
-		Reference reference = new Reference("Practitioner/52");
-		List<Reference> referenceList = new ArrayList<>();
-		referenceList.add(reference);
+	//	Reference reference = new Reference("Practitioner/52");
+		//List<Reference> referenceList = new ArrayList<>();
+	//	referenceList.add(reference);
 		//patient.setGeneralPractitioner(referenceList);
-		patient.setGeneralPractitioner(referenceList);
+	//	patient.setGeneralPractitioner(referenceList);
 
-		patient.setManagingOrganization(new Reference("Organization/1000102"));
+	//	patient.setManagingOrganization(new Reference("Organization/1000102"));
 		//Inserting Organization
-		patient.setManagingOrganization(new Reference("Organization/1"));
+	//	patient.setManagingOrganization(new Reference("Organization/1"));
 		return patient;
 	}
 
